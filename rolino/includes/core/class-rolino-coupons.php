@@ -34,7 +34,8 @@ class Rolino_Coupons {
         
         $data = $this->sanitize_coupon_data($data);
         
-        if (!$this->validate_coupon_data($data)) {
+        $validation_result = $this->validate_coupon_data($data);
+        if (!$validation_result['valid']) {
             return false;
         }
         
@@ -81,7 +82,8 @@ class Rolino_Coupons {
         
         $data = $this->sanitize_coupon_data($data);
         
-        if (!$this->validate_coupon_data($data)) {
+        $validation_result = $this->validate_coupon_data($data);
+        if (!$validation_result['valid']) {
             return false;
         }
         

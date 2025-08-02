@@ -83,6 +83,12 @@ class Rolino {
     }
     
     public function initialize() {
+        // Create database tables if they don't exist
+        $this->create_database_tables();
+        
+        // Set default options if they don't exist
+        $this->set_default_options();
+        
         // Load required files
         $this->load_dependencies();
         
@@ -198,6 +204,14 @@ class Rolino {
     private function create_database_tables() {
         global $wpdb;
         
+        // Check if tables already exist
+        $plans_table = $wpdb->prefix . 'rolino_plans';
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$plans_table'") == $plans_table;
+        
+        if ($table_exists) {
+            return; // Tables already exist
+        }
+        
         $charset_collate = $wpdb->get_charset_collate();
         
         // Table definitions
@@ -238,7 +252,7 @@ class Rolino {
             gateway VARCHAR(50) NOT NULL,
             status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending/completed/failed',
             description TEXT,
-            transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) $charset_collate;";
         
         // 5. rolino_credits
@@ -328,6 +342,12 @@ class Rolino {
     private function insert_default_sms_scenarios() {
         global $wpdb;
         
+        // Check if scenarios already exist
+        $scenarios_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}rolino_sms_scenarios");
+        if ($scenarios_count > 0) {
+            return; // Scenarios already exist
+        }
+        
         $default_scenarios = array(
             array(
                 'scenario_type' => 1,
@@ -371,14 +391,26 @@ class Rolino {
     
     private function set_default_options() {
         // Single buy settings
-        add_option('rolino_single_buy_duration', 30);
-        add_option('rolino_single_buy_credits', 5);
-        add_option('rolino_single_buy_active', 1);
+        if (get_option('rolino_single_buy_duration') === false) {
+            add_option('rolino_single_buy_duration', 30);
+        }
+        if (get_option('rolino_single_buy_credits') === false) {
+            add_option('rolino_single_buy_credits', 5);
+        }
+        if (get_option('rolino_single_buy_active') === false) {
+            add_option('rolino_single_buy_active', 1);
+        }
         
         // SMS settings
-        add_option('rolino_sms_enabled', 1);
-        add_option('rolino_sms_api_key', '');
-        add_option('rolino_sms_sender', '');
+        if (get_option('rolino_sms_enabled') === false) {
+            add_option('rolino_sms_enabled', 1);
+        }
+        if (get_option('rolino_sms_api_key') === false) {
+            add_option('rolino_sms_api_key', '');
+        }
+        if (get_option('rolino_sms_sender') === false) {
+            add_option('rolino_sms_sender', '');
+        }
     }
 }
 
