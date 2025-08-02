@@ -17,6 +17,7 @@ class Rolino_SMS_Admin {
         add_action('wp_ajax_rolino_save_sms_scenario', array($this, 'ajax_save_scenario'));
         add_action('wp_ajax_rolino_test_sms', array($this, 'ajax_test_sms'));
         add_action('wp_ajax_rolino_auto_save_template', array($this, 'ajax_auto_save_template'));
+        add_action('wp_ajax_rolino_save_sms_draft', array($this, 'ajax_save_sms_draft'));
     }
     
     /**
@@ -449,5 +450,31 @@ class Rolino_SMS_Admin {
                 'active' => $current_tab === 'queue'
             )
         );
+    }
+    
+    /**
+     * AJAX save SMS draft
+     */
+    public function ajax_save_sms_draft() {
+        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $scenario_id = intval($_POST['scenario_id'] ?? 0);
+        $template = sanitize_textarea_field($_POST['template'] ?? '');
+        
+        if (!$scenario_id) {
+            wp_send_json_error(array('message' => __('شناسه سناریو نامعتبر است', 'rolino')));
+        }
+        
+        $result = $this->get_sms()->update_scenario($scenario_id, array('message_template' => $template));
+        
+        if ($result) {
+            wp_send_json_success(array('message' => __('پیش‌نویس ذخیره شد', 'rolino')));
+        } else {
+            wp_send_json_error(array('message' => __('خطا در ذخیره پیش‌نویس', 'rolino')));
+        }
     }
 }

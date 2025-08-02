@@ -17,6 +17,7 @@ class Rolino_Plans_Admin {
         add_action('wp_ajax_rolino_toggle_plan_status', array($this, 'ajax_toggle_plan_status'));
         add_action('wp_ajax_rolino_delete_plan', array($this, 'ajax_delete_plan'));
         add_action('wp_ajax_rolino_save_plan', array($this, 'ajax_save_plan'));
+        add_action('wp_ajax_rolino_toggle_plan_group', array($this, 'ajax_toggle_plan_group'));
     }
     
     /**
@@ -368,5 +369,42 @@ class Rolino_Plans_Admin {
         $stats['popular_plan'] = $popular_plan ? $popular_plan->plan_name : __('ندارد', 'rolino');
         
         return $stats;
+    }
+    
+    /**
+     * AJAX toggle plan group
+     */
+    public function ajax_toggle_plan_group() {
+        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $plan_id = intval($_POST['plan_id'] ?? 0);
+        $group_id = intval($_POST['group_id'] ?? 0);
+        $checked = intval($_POST['checked'] ?? 0);
+        
+        if (!$plan_id || !$group_id) {
+            wp_send_json_error(array('message' => __('شناسه طرح یا گروه نامعتبر است', 'rolino')));
+        }
+        
+        $plans = $this->get_plans();
+        
+        if ($checked) {
+            // Add plan to group
+            $result = $plans->add_plan_to_group($plan_id, $group_id);
+            $message = __('طرح به گروه اضافه شد', 'rolino');
+        } else {
+            // Remove plan from group
+            $result = $plans->remove_plan_from_group($plan_id, $group_id);
+            $message = __('طرح از گروه حذف شد', 'rolino');
+        }
+        
+        if ($result) {
+            wp_send_json_success(array('message' => $message));
+        } else {
+            wp_send_json_error(array('message' => __('خطا در به‌روزرسانی گروه', 'rolino')));
+        }
     }
 }

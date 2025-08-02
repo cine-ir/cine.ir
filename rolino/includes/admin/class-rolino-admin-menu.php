@@ -17,6 +17,7 @@ class Rolino_Admin_Menu {
         add_action('wp_ajax_rolino_add_plan_group', array($this, 'ajax_add_plan_group'));
         add_action('wp_ajax_rolino_update_plan_group', array($this, 'ajax_update_plan_group'));
         add_action('wp_ajax_rolino_delete_plan_group', array($this, 'ajax_delete_plan_group'));
+        add_action('wp_ajax_rolino_load_more_content', array($this, 'ajax_load_more_content'));
     }
     
     /**
@@ -534,5 +535,68 @@ class Rolino_Admin_Menu {
         } else {
             wp_send_json_error(array('message' => __('خطا در حذف گروه', 'rolino')));
         }
+    }
+    
+    /**
+     * AJAX load more content
+     */
+    public function ajax_load_more_content() {
+        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $page = intval($_POST['page'] ?? 1);
+        $type = sanitize_text_field($_POST['type'] ?? '');
+        
+        $content = '';
+        $has_more = false;
+        
+        switch ($type) {
+            case 'plans':
+                $plans = new Rolino_Plans();
+                $all_plans = $plans->get_plans(array('limit' => 10, 'offset' => ($page - 1) * 10));
+                $total_plans = $plans->get_plans_count();
+                
+                foreach ($all_plans as $plan) {
+                    $content .= '<tr>';
+                    $content .= '<td>' . esc_html($plan->plan_name) . '</td>';
+                    $content .= '<td>' . number_format($plan->credits) . '</td>';
+                    $content .= '<td>' . number_format($plan->duration) . '</td>';
+                    $content .= '<td>' . number_format($plan->price) . '</td>';
+                    $content .= '<td>' . ($plan->status ? __('فعال', 'rolino') : __('غیرفعال', 'rolino')) . '</td>';
+                    $content .= '</tr>';
+                }
+                
+                $has_more = ($page * 10) < $total_plans;
+                break;
+                
+            case 'coupons':
+                $coupons = new Rolino_Coupons();
+                $all_coupons = $coupons->get_coupons(array('limit' => 10, 'offset' => ($page - 1) * 10));
+                $total_coupons = $coupons->get_coupons_count();
+                
+                foreach ($all_coupons as $coupon) {
+                    $content .= '<tr>';
+                    $content .= '<td>' . esc_html($coupon->code) . '</td>';
+                    $content .= '<td>' . ($coupon->type == 1 ? __('درصدی', 'rolino') : __('مبلغ ثابت', 'rolino')) . '</td>';
+                    $content .= '<td>' . number_format($coupon->usage_limit) . '</td>';
+                    $content .= '<td>' . ($coupon->status ? __('فعال', 'rolino') : __('غیرفعال', 'rolino')) . '</td>';
+                    $content .= '</tr>';
+                }
+                
+                $has_more = ($page * 10) < $total_coupons;
+                break;
+                
+            default:
+                wp_send_json_error(array('message' => __('نوع محتوا نامعتبر است', 'rolino')));
+                break;
+        }
+        
+        wp_send_json_success(array(
+            'content' => $content,
+            'has_more' => $has_more
+        ));
     }
 }
