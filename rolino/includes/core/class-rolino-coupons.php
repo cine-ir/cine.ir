@@ -488,7 +488,7 @@ class Rolino_Coupons {
      * @param array $plan_discounts
      * @return bool
      */
-    private function add_plan_discounts($coupon_id, $plan_discounts) {
+    public function add_plan_discounts($coupon_id, $plan_discounts) {
         global $wpdb;
         
         foreach ($plan_discounts as $plan_id => $discount_percent) {
@@ -512,7 +512,7 @@ class Rolino_Coupons {
      * @param int $coupon_id
      * @return bool
      */
-    private function remove_plan_discounts($coupon_id) {
+    public function remove_plan_discounts($coupon_id) {
         global $wpdb;
         
         return $wpdb->delete(
@@ -528,7 +528,7 @@ class Rolino_Coupons {
      * @param string $code
      * @return bool
      */
-    private function coupon_code_exists($code) {
+    public function coupon_code_exists($code) {
         global $wpdb;
         
         $count = $wpdb->get_var(
@@ -583,7 +583,7 @@ class Rolino_Coupons {
      * @param array $data
      * @return bool
      */
-    private function validate_coupon_data($data) {
+    public function validate_coupon_data($data) {
         if (empty($data['code']) || strlen($data['code']) < 4 || strlen($data['code']) > 8) {
             return false;
         }

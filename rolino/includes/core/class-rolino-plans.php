@@ -532,7 +532,7 @@ class Rolino_Plans {
      * @param array $data
      * @return bool
      */
-    private function validate_plan_data($data) {
+    public function validate_plan_data($data) {
         if (empty($data['plan_name'])) {
             return false;
         }
