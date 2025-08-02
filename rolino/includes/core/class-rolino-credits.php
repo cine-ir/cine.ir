@@ -546,4 +546,54 @@ class Rolino_Credits {
         
         return $info;
     }
+    
+    /**
+     * Add credits (alias for add_credit)
+     * 
+     * @param int $user_id
+     * @param int $plan_id
+     * @param int $credits
+     * @param int $duration
+     * @return bool
+     */
+    public function add_credits($user_id, $plan_id, $credits, $duration) {
+        return $this->add_credit($user_id, $plan_id, $credits, $duration);
+    }
+    
+    /**
+     * Delete user credits
+     * 
+     * @param int $user_id
+     * @return bool
+     */
+    public function delete_user_credits($user_id) {
+        global $wpdb;
+        
+        $result = $wpdb->delete(
+            $this->table_name,
+            array('user_id' => $user_id),
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
+    
+    /**
+     * Extend user credits
+     * 
+     * @param int $user_id
+     * @param int $days
+     * @return bool
+     */
+    public function extend_user_credits($user_id, $days) {
+        global $wpdb;
+        
+        $sql = "UPDATE {$this->table_name} 
+                SET end_time = DATE_ADD(end_time, INTERVAL %d DAY) 
+                WHERE user_id = %d AND end_time > NOW()";
+        
+        $result = $wpdb->query($wpdb->prepare($sql, $days, $user_id));
+        
+        return $result !== false;
+    }
 }
