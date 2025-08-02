@@ -125,7 +125,7 @@ class Rolino {
         
         // Public classes
         require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-shortcodes.php';
-        require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-sms-handler.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-frontend.php';
     }
     
     private function init_core_classes() {
@@ -145,7 +145,7 @@ class Rolino {
     
     private function init_frontend() {
         new Rolino_Shortcodes();
-        new Rolino_SMS_Handler();
+        new Rolino_Frontend();
     }
     
     private function setup_cron_jobs() {
