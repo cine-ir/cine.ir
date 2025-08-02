@@ -75,6 +75,29 @@ class Rolino_Plans {
     }
     
     /**
+     * Get plans count
+     * 
+     * @param array $args
+     * @return int
+     */
+    public function get_plans_count($args = array()) {
+        global $wpdb;
+        
+        $sql = "SELECT COUNT(*) FROM {$this->table_name}";
+        $where_conditions = array();
+        
+        if (isset($args['status']) && $args['status'] !== 'all') {
+            $where_conditions[] = $wpdb->prepare("status = %d", $args['status']);
+        }
+        
+        if (!empty($where_conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $where_conditions);
+        }
+        
+        return intval($wpdb->get_var($sql));
+    }
+    
+    /**
      * Get plan by ID
      * 
      * @param int $plan_id
