@@ -116,13 +116,11 @@ class Rolino {
         require_once ROLINO_PLUGIN_PATH . 'includes/gateways/ZarrinPalGateway.php';
         
         // Admin classes
-        if (is_admin()) {
-            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-admin-menu.php';
-            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-plans-admin.php';
-            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-coupons-admin.php';
-            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-members-admin.php';
-            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-sms-admin.php';
-        }
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-admin-menu.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-plans-admin.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-coupons-admin.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-members-admin.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-sms-admin.php';
         
         // Public classes
         require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-shortcodes.php';
