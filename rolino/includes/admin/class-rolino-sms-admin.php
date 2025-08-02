@@ -14,11 +14,19 @@ class Rolino_SMS_Admin {
     private $sms;
     
     public function __construct() {
-        $this->sms = new Rolino_SMS();
-        
         add_action('wp_ajax_rolino_save_sms_scenario', array($this, 'ajax_save_scenario'));
         add_action('wp_ajax_rolino_test_sms', array($this, 'ajax_test_sms'));
         add_action('wp_ajax_rolino_auto_save_template', array($this, 'ajax_auto_save_template'));
+    }
+    
+    /**
+     * Get SMS instance
+     */
+    private function get_sms() {
+        if (!isset($this->sms)) {
+            $this->sms = new Rolino_SMS();
+        }
+        return $this->sms;
     }
     
     /**
@@ -52,8 +60,8 @@ class Rolino_SMS_Admin {
     private function display_scenarios_tab() {
         $this->handle_scenario_save();
         
-        $scenarios = $this->sms->get_scenarios();
-        $scenario_types = $this->sms->get_scenario_type_names();
+        $scenarios = $this->get_sms()->get_scenarios();
+        $scenario_types = $this->get_sms()->get_scenario_type_names();
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/sms-scenarios.php';
     }
@@ -84,8 +92,8 @@ class Rolino_SMS_Admin {
             $args['sent_status'] = intval($_GET['sent_status']);
         }
         
-        $logs = $this->sms->get_sms_logs($args);
-        $scenarios = $this->sms->get_scenarios();
+        $logs = $this->get_sms()->get_sms_logs($args);
+        $scenarios = $this->get_sms()->get_scenarios();
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/sms-logs.php';
     }
@@ -130,7 +138,7 @@ class Rolino_SMS_Admin {
             );
             
             if ($scenario_data['scenario_type'] && !empty($scenario_data['message_template'])) {
-                $result = $this->sms->add_scenario($scenario_data);
+                $result = $this->get_sms()->add_scenario($scenario_data);
                 if ($result) {
                     $this->add_admin_notice(__('سناریو جدید اضافه شد', 'rolino'), 'success');
                 } else {
@@ -158,7 +166,7 @@ class Rolino_SMS_Admin {
                 'status' => intval($data['status'] ?? 0)
             );
             
-            $this->sms->update_scenario($scenario_id, $update_data);
+            $this->get_sms()->update_scenario($scenario_id, $update_data);
         }
         
         $this->add_admin_notice(__('سناریوهای SMS ذخیره شدند', 'rolino'), 'success');
@@ -189,11 +197,11 @@ class Rolino_SMS_Admin {
         
         if ($scenario_id) {
             // Update existing scenario
-            $result = $this->sms->update_scenario($scenario_id, $data);
+            $result = $this->get_sms()->update_scenario($scenario_id, $data);
             $message = __('سناریو به‌روزرسانی شد', 'rolino');
         } else {
             // Add new scenario
-            $result = $this->sms->add_scenario($data);
+            $result = $this->get_sms()->add_scenario($data);
             $message = __('سناریو جدید اضافه شد', 'rolino');
         }
         
@@ -248,7 +256,7 @@ class Rolino_SMS_Admin {
             wp_send_json_error(array('message' => __('شناسه سناریو نامعتبر است', 'rolino')));
         }
         
-        $result = $this->sms->update_scenario($scenario_id, array('message_template' => $template));
+        $result = $this->get_sms()->update_scenario($scenario_id, array('message_template' => $template));
         
         if ($result) {
             wp_send_json_success(array('message' => __('قالب پیام ذخیره شد', 'rolino')));

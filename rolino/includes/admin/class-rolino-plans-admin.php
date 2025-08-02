@@ -14,11 +14,19 @@ class Rolino_Plans_Admin {
     private $plans;
     
     public function __construct() {
-        $this->plans = new Rolino_Plans();
-        
         add_action('wp_ajax_rolino_toggle_plan_status', array($this, 'ajax_toggle_plan_status'));
         add_action('wp_ajax_rolino_delete_plan', array($this, 'ajax_delete_plan'));
         add_action('wp_ajax_rolino_save_plan', array($this, 'ajax_save_plan'));
+    }
+    
+    /**
+     * Get plans instance
+     */
+    private function get_plans() {
+        if (!isset($this->plans)) {
+            $this->plans = new Rolino_Plans();
+        }
+        return $this->plans;
     }
     
     /**
@@ -60,8 +68,8 @@ class Rolino_Plans_Admin {
             'order' => $_GET['order'] ?? 'DESC'
         );
         
-        $plans = $this->plans->get_plans($args);
-        $total_plans = $this->plans->get_plans_count();
+        $plans = $this->get_plans()->get_plans($args);
+        $total_plans = $this->get_plans()->get_plans_count();
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/plans-list.php';
     }
@@ -89,7 +97,7 @@ class Rolino_Plans_Admin {
      * @param int $plan_id
      */
     private function display_edit_plan_form($plan_id) {
-        $plan = $this->plans->get_plan($plan_id);
+        $plan = $this->get_plans()->get_plan($plan_id);
         
         if (!$plan) {
             wp_die(__('طرح یافت نشد', 'rolino'));
@@ -116,21 +124,21 @@ class Rolino_Plans_Admin {
         switch ($action) {
             case 'activate':
                 foreach ($plan_ids as $plan_id) {
-                    $this->plans->update_plan($plan_id, array('status' => 1));
+                    $this->get_plans()->update_plan($plan_id, array('status' => 1));
                 }
                 $this->add_admin_notice(__('طرح‌های انتخابی فعال شدند', 'rolino'), 'success');
                 break;
                 
             case 'deactivate':
                 foreach ($plan_ids as $plan_id) {
-                    $this->plans->update_plan($plan_id, array('status' => 0));
+                    $this->get_plans()->update_plan($plan_id, array('status' => 0));
                 }
                 $this->add_admin_notice(__('طرح‌های انتخابی غیرفعال شدند', 'rolino'), 'success');
                 break;
                 
             case 'delete':
                 foreach ($plan_ids as $plan_id) {
-                    $this->plans->delete_plan($plan_id);
+                    $this->get_plans()->delete_plan($plan_id);
                 }
                 $this->add_admin_notice(__('طرح‌های انتخابی حذف شدند', 'rolino'), 'success');
                 break;
@@ -154,7 +162,7 @@ class Rolino_Plans_Admin {
             wp_send_json_error(array('message' => __('شناسه طرح نامعتبر است', 'rolino')));
         }
         
-        $result = $this->plans->update_plan($plan_id, array('status' => $status));
+        $result = $this->get_plans()->update_plan($plan_id, array('status' => $status));
         
         if ($result) {
             wp_send_json_success(array(
@@ -196,7 +204,7 @@ class Rolino_Plans_Admin {
             ));
         }
         
-        $result = $this->plans->delete_plan($plan_id);
+        $result = $this->get_plans()->delete_plan($plan_id);
         
         if ($result) {
             wp_send_json_success(array('message' => __('طرح با موفقیت حذف شد', 'rolino')));
@@ -226,18 +234,18 @@ class Rolino_Plans_Admin {
         );
         
         // Validation
-        $validation_result = $this->plans->validate_plan_data($plan_data);
+        $validation_result = $this->get_plans()->validate_plan_data($plan_data);
         if (!$validation_result['valid']) {
             wp_send_json_error(array('message' => $validation_result['message']));
         }
         
         if ($plan_id > 0) {
             // Update existing plan
-            $result = $this->plans->update_plan($plan_id, $plan_data);
+            $result = $this->get_plans()->update_plan($plan_id, $plan_data);
             $message = __('طرح با موفقیت به‌روزرسانی شد', 'rolino');
         } else {
             // Create new plan
-            $result = $this->plans->create_plan($plan_data);
+            $result = $this->get_plans()->create_plan($plan_data);
             $plan_id = $result;
             $message = __('طرح جدید با موفقیت ایجاد شد', 'rolino');
         }
