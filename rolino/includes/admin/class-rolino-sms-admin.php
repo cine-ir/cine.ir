@@ -120,6 +120,29 @@ class Rolino_SMS_Admin {
      * Handle scenario save
      */
     private function handle_scenario_save() {
+        // Handle adding new scenario
+        if (isset($_POST['add_scenario']) && wp_verify_nonce($_POST['_wpnonce'], 'rolino_add_scenario')) {
+            $scenario_data = array(
+                'scenario_type' => intval($_POST['scenario_type'] ?? 0),
+                'days_offset' => $_POST['days_offset'] === '' ? null : intval($_POST['days_offset']),
+                'message_template' => sanitize_textarea_field($_POST['message_template'] ?? ''),
+                'status' => intval($_POST['status'] ?? 0)
+            );
+            
+            if ($scenario_data['scenario_type'] && !empty($scenario_data['message_template'])) {
+                $result = $this->sms->add_scenario($scenario_data);
+                if ($result) {
+                    $this->add_admin_notice(__('سناریو جدید اضافه شد', 'rolino'), 'success');
+                } else {
+                    $this->add_admin_notice(__('خطا در اضافه کردن سناریو', 'rolino'), 'error');
+                }
+            } else {
+                $this->add_admin_notice(__('لطفاً نوع سناریو و متن پیام را وارد کنید', 'rolino'), 'error');
+            }
+            return;
+        }
+        
+        // Handle updating existing scenarios
         if (!isset($_POST['save_scenarios']) || !wp_verify_nonce($_POST['_wpnonce'], 'rolino_sms_scenarios')) {
             return;
         }
@@ -145,27 +168,37 @@ class Rolino_SMS_Admin {
      * AJAX save scenario
      */
     public function ajax_save_scenario() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_ajax_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
         }
         
         $scenario_id = intval($_POST['scenario_id'] ?? 0);
+        $scenario_type = intval($_POST['scenario_type'] ?? 0);
         $data = array(
+            'scenario_type' => $scenario_type,
             'days_offset' => $_POST['days_offset'] === '' ? null : intval($_POST['days_offset']),
             'message_template' => sanitize_textarea_field($_POST['message_template'] ?? ''),
             'status' => intval($_POST['status'] ?? 0)
         );
         
-        if (!$scenario_id) {
-            wp_send_json_error(array('message' => __('شناسه سناریو نامعتبر است', 'rolino')));
+        if (!$scenario_type || empty($data['message_template'])) {
+            wp_send_json_error(array('message' => __('لطفاً نوع سناریو و متن پیام را وارد کنید', 'rolino')));
         }
         
-        $result = $this->sms->update_scenario($scenario_id, $data);
+        if ($scenario_id) {
+            // Update existing scenario
+            $result = $this->sms->update_scenario($scenario_id, $data);
+            $message = __('سناریو به‌روزرسانی شد', 'rolino');
+        } else {
+            // Add new scenario
+            $result = $this->sms->add_scenario($data);
+            $message = __('سناریو جدید اضافه شد', 'rolino');
+        }
         
         if ($result) {
-            wp_send_json_success(array('message' => __('سناریو ذخیره شد', 'rolino')));
+            wp_send_json_success(array('message' => $message));
         } else {
             wp_send_json_error(array('message' => __('خطا در ذخیره سناریو', 'rolino')));
         }

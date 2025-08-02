@@ -38,67 +38,162 @@ $available_variables = $sms_admin->get_available_variables();
         </details>
     </div>
     
-    <form method="post" action="">
-        <?php wp_nonce_field('rolino_sms_scenarios', '_wpnonce'); ?>
-        <input type="hidden" name="save_scenarios" value="1">
-        
-        <table class="wp-list-table widefat fixed striped">
-            <thead>
-                <tr>
-                    <th style="width: 200px;"><?php _e('نوع سناریو', 'rolino'); ?></th>
-                    <th style="width: 120px;"><?php _e('فاصله (روز)', 'rolino'); ?></th>
-                    <th><?php _e('قالب پیام', 'rolino'); ?></th>
-                    <th style="width: 100px;"><?php _e('وضعیت', 'rolino'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (!empty($scenarios)): ?>
-                    <?php foreach ($scenarios as $scenario): ?>
-                        <tr>
-                            <td>
-                                <strong><?php echo esc_html($scenario_types[$scenario->scenario_type] ?? __('نامشخص', 'rolino')); ?></strong>
-                                <p class="description"><?php echo $sms_admin->get_scenario_description($scenario->scenario_type); ?></p>
-                            </td>
-                            <td>
-                                <?php if (in_array($scenario->scenario_type, [1, 2, 3])): ?>
-                                    <input type="number" 
-                                           name="scenarios[<?php echo $scenario->id; ?>][days_offset]" 
-                                           value="<?php echo esc_attr($scenario->days_offset); ?>" 
-                                           min="0" 
-                                           max="365" 
-                                           class="small-text">
-                                <?php else: ?>
-                                    <span class="description"><?php _e('فوری', 'rolino'); ?></span>
-                                    <input type="hidden" name="scenarios[<?php echo $scenario->id; ?>][days_offset]" value="">
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <textarea name="scenarios[<?php echo $scenario->id; ?>][message_template]" 
-                                          rows="3" 
-                                          style="width: 100%;"
-                                          placeholder="<?php _e('متن پیام را وارد کنید...', 'rolino'); ?>"><?php echo esc_textarea($scenario->message_template); ?></textarea>
-                            </td>
-                            <td>
-                                <label class="switch">
-                                    <input type="checkbox" 
-                                           name="scenarios[<?php echo $scenario->id; ?>][status]" 
-                                           value="1" 
-                                           <?php checked($scenario->status, 1); ?>>
-                                    <span class="slider round"></span>
-                                </label>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
+    <!-- Add New Scenario Form -->
+    <div class="postbox" style="margin-bottom: 20px;">
+        <h2 class="hndle"><?php _e('افزودن سناریو جدید', 'rolino'); ?></h2>
+        <div class="inside">
+            <form method="post" action="" id="add-scenario-form">
+                <?php wp_nonce_field('rolino_add_scenario', '_wpnonce'); ?>
+                <input type="hidden" name="add_scenario" value="1">
+                
+                <table class="form-table">
                     <tr>
-                        <td colspan="4"><?php _e('هیچ سناریویی یافت نشد', 'rolino'); ?></td>
+                        <th scope="row">
+                            <label for="scenario_type"><?php _e('نوع سناریو', 'rolino'); ?></label>
+                        </th>
+                        <td>
+                            <select id="scenario_type" name="scenario_type" required>
+                                <option value=""><?php _e('انتخاب کنید', 'rolino'); ?></option>
+                                <?php foreach ($scenario_types as $type_id => $type_name): ?>
+                                    <option value="<?php echo $type_id; ?>"><?php echo $type_name; ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description" id="scenario-description"></p>
+                        </td>
                     </tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-        
-        <?php submit_button(__('ذخیره سناریوها', 'rolino')); ?>
-    </form>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="days_offset"><?php _e('فاصله (روز)', 'rolino'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" 
+                                   id="days_offset" 
+                                   name="days_offset" 
+                                   value="0" 
+                                   min="0" 
+                                   max="365" 
+                                   class="small-text">
+                            <p class="description"><?php _e('تعداد روز قبل یا بعد از رویداد', 'rolino'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="message_template"><?php _e('قالب پیام', 'rolino'); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="message_template" 
+                                      name="message_template" 
+                                      rows="4" 
+                                      style="width: 100%;"
+                                      placeholder="<?php _e('متن پیام را وارد کنید...', 'rolino'); ?>"
+                                      required></textarea>
+                            <p class="description"><?php _e('از متغیرهای پویا استفاده کنید، مثال: {{user_name}}', 'rolino'); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="status"><?php _e('وضعیت', 'rolino'); ?></label>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox" 
+                                       id="status" 
+                                       name="status" 
+                                       value="1" 
+                                       checked>
+                                <?php _e('فعال', 'rolino'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <button type="submit" class="button button-primary">
+                        <?php _e('افزودن سناریو', 'rolino'); ?>
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Existing Scenarios -->
+    <div class="postbox">
+        <h2 class="hndle"><?php _e('سناریوهای موجود', 'rolino'); ?></h2>
+        <div class="inside">
+            <form method="post" action="">
+                <?php wp_nonce_field('rolino_sms_scenarios', '_wpnonce'); ?>
+                <input type="hidden" name="save_scenarios" value="1">
+                
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;"><?php _e('نوع سناریو', 'rolino'); ?></th>
+                            <th style="width: 120px;"><?php _e('فاصله (روز)', 'rolino'); ?></th>
+                            <th><?php _e('قالب پیام', 'rolino'); ?></th>
+                            <th style="width: 100px;"><?php _e('وضعیت', 'rolino'); ?></th>
+                            <th style="width: 80px;"><?php _e('عملیات', 'rolino'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($scenarios)): ?>
+                            <?php foreach ($scenarios as $scenario): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html($scenario_types[$scenario->scenario_type] ?? __('نامشخص', 'rolino')); ?></strong>
+                                        <p class="description"><?php echo $sms_admin->get_scenario_description($scenario->scenario_type); ?></p>
+                                    </td>
+                                    <td>
+                                        <?php if (in_array($scenario->scenario_type, [1, 2, 3])): ?>
+                                            <input type="number" 
+                                                   name="scenarios[<?php echo $scenario->id; ?>][days_offset]" 
+                                                   value="<?php echo esc_attr($scenario->days_offset); ?>" 
+                                                   min="0" 
+                                                   max="365" 
+                                                   class="small-text">
+                                        <?php else: ?>
+                                            <span class="description"><?php _e('فوری', 'rolino'); ?></span>
+                                            <input type="hidden" name="scenarios[<?php echo $scenario->id; ?>][days_offset]" value="">
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <textarea name="scenarios[<?php echo $scenario->id; ?>][message_template]" 
+                                                  rows="3" 
+                                                  style="width: 100%;"
+                                                  placeholder="<?php _e('متن پیام را وارد کنید...', 'rolino'); ?>"><?php echo esc_textarea($scenario->message_template); ?></textarea>
+                                    </td>
+                                    <td>
+                                        <label class="switch">
+                                            <input type="checkbox" 
+                                                   name="scenarios[<?php echo $scenario->id; ?>][status]" 
+                                                   value="1" 
+                                                   <?php checked($scenario->status, 1); ?>>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <a href="<?php echo admin_url('admin.php?page=rolino-sms-scenarios&action=delete&scenario_id=' . $scenario->id . '&_wpnonce=' . wp_create_nonce('delete_scenario')); ?>" 
+                                           class="button button-small button-link-delete"
+                                           onclick="return confirm('<?php _e('آیا مطمئن هستید که می‌خواهید این سناریو را حذف کنید؟', 'rolino'); ?>')">
+                                            <?php _e('حذف', 'rolino'); ?>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5"><?php _e('هیچ سناریویی یافت نشد', 'rolino'); ?></td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                
+                <?php submit_button(__('ذخیره سناریوها', 'rolino')); ?>
+            </form>
+        </div>
+    </div>
     
     <!-- Test SMS Form -->
     <div class="postbox" style="margin-top: 20px;">
@@ -208,6 +303,63 @@ input:checked + .slider:before {
 
 <script>
 jQuery(document).ready(function($) {
+    // Scenario type descriptions
+    var scenarioDescriptions = {
+        '1': '<?php _e('ارسال پیام قبل از انقضای اعتبار', 'rolino'); ?>',
+        '2': '<?php _e('ارسال پیام بعد از انقضای اعتبار', 'rolino'); ?>',
+        '3': '<?php _e('ارسال پیام قبل از انقضای اعتبار گروه', 'rolino'); ?>',
+        '4': '<?php _e('ارسال پیام هنگام خرید طرح', 'rolino'); ?>',
+        '5': '<?php _e('ارسال پیام هنگام خرید تکی', 'rolino'); ?>',
+        '6': '<?php _e('ارسال پیام هنگام فعال‌سازی کد تخفیف', 'rolino'); ?>'
+    };
+    
+    // Update scenario description when type changes
+    $('#scenario_type').on('change', function() {
+        var type = $(this).val();
+        var description = scenarioDescriptions[type] || '';
+        $('#scenario-description').text(description);
+        
+        // Show/hide days offset field based on scenario type
+        if ([1, 2, 3].indexOf(parseInt(type)) !== -1) {
+            $('#days_offset').closest('tr').show();
+        } else {
+            $('#days_offset').closest('tr').hide();
+        }
+    });
+    
+    // Add scenario form submission
+    $('#add-scenario-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = $(this).serialize();
+        formData += '&action=rolino_save_sms_scenario&nonce=' + rolino_ajax.nonce;
+        
+        var submitBtn = $(this).find('button[type="submit"]');
+        var originalText = submitBtn.text();
+        
+        submitBtn.prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
+        
+        $.ajax({
+            url: rolino_ajax.ajax_url,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert(response.data.message || '<?php _e('خطا در ذخیره سناریو', 'rolino'); ?>');
+                }
+            },
+            error: function() {
+                alert('<?php _e('خطا در ارتباط با سرور', 'rolino'); ?>');
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+    
     // Test SMS form
     $('#test-sms-form').on('submit', function(e) {
         e.preventDefault();
@@ -221,13 +373,13 @@ jQuery(document).ready(function($) {
         }
         
         $.ajax({
-            url: ajaxurl,
+            url: rolino_ajax.ajax_url,
             type: 'POST',
             data: {
                 action: 'rolino_test_sms',
                 phone: phone,
                 message: message,
-                nonce: rolinoAdmin.nonce
+                nonce: rolino_ajax.nonce
             },
             success: function(response) {
                 if (response.success) {

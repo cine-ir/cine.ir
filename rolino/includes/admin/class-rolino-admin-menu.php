@@ -83,6 +83,16 @@ class Rolino_Admin_Menu {
             array($this, 'coupons_page')
         );
         
+        // Members submenu
+        add_submenu_page(
+            'rolino',
+            __('اعضا', 'rolino'),
+            __('اعضا', 'rolino'),
+            $capability,
+            'rolino-members',
+            array($this, 'members_page')
+        );
+        
         // SMS Scenarios submenu
         add_submenu_page(
             'rolino',
@@ -161,6 +171,14 @@ class Rolino_Admin_Menu {
     public function coupons_page() {
         $coupons_admin = new Rolino_Coupons_Admin();
         $coupons_admin->display_page();
+    }
+    
+    /**
+     * Members page
+     */
+    public function members_page() {
+        $members_admin = new Rolino_Members_Admin();
+        $members_admin->display_page();
     }
     
     /**

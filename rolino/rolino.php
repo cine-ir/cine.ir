@@ -140,6 +140,7 @@ class Rolino {
         new Rolino_Admin_Menu();
         new Rolino_Plans_Admin();
         new Rolino_Coupons_Admin();
+        new Rolino_Members_Admin();
         new Rolino_SMS_Admin();
     }
     

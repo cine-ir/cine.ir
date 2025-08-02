@@ -447,6 +447,31 @@ class Rolino_SMS {
     }
     
     /**
+     * Add scenario
+     * 
+     * @param array $data
+     * @return int|false
+     */
+    public function add_scenario($data) {
+        global $wpdb;
+        
+        $insert_data = array(
+            'scenario_type' => intval($data['scenario_type']),
+            'days_offset' => $data['days_offset'] === '' ? null : intval($data['days_offset']),
+            'message_template' => sanitize_textarea_field($data['message_template']),
+            'status' => intval($data['status'] ?? 1)
+        );
+        
+        $result = $wpdb->insert(
+            $this->scenarios_table,
+            $insert_data,
+            array('%d', '%d', '%s', '%d')
+        );
+        
+        return $result !== false ? $wpdb->insert_id : false;
+    }
+    
+    /**
      * Update scenario
      * 
      * @param int $scenario_id
