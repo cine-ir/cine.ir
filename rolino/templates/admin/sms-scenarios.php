@@ -332,7 +332,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_save_sms_scenario&nonce=' + rolino_ajax.nonce;
+        formData += '&action=rolino_save_sms_scenario';
         
         var submitBtn = $(this).find('button[type="submit"]');
         var originalText = submitBtn.text();
@@ -379,7 +379,7 @@ jQuery(document).ready(function($) {
                 action: 'rolino_test_sms',
                 phone: phone,
                 message: message,
-                nonce: rolino_ajax.nonce
+                nonce: $('#_wpnonce').val()
             },
             success: function(response) {
                 if (response.success) {

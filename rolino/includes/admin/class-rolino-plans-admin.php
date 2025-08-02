@@ -217,7 +217,7 @@ class Rolino_Plans_Admin {
      * AJAX save plan
      */
     public function ajax_save_plan() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_plan_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));

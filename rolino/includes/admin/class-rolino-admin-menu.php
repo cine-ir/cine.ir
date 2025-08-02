@@ -14,6 +14,9 @@ class Rolino_Admin_Menu {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'handle_admin_actions'));
+        add_action('wp_ajax_rolino_add_plan_group', array($this, 'ajax_add_plan_group'));
+        add_action('wp_ajax_rolino_update_plan_group', array($this, 'ajax_update_plan_group'));
+        add_action('wp_ajax_rolino_delete_plan_group', array($this, 'ajax_delete_plan_group'));
     }
     
     /**
@@ -91,6 +94,16 @@ class Rolino_Admin_Menu {
             $capability,
             'rolino-members',
             array($this, 'members_page')
+        );
+        
+        // Revenue submenu
+        add_submenu_page(
+            'rolino',
+            __('مدیریت درآمد', 'rolino'),
+            __('مدیریت درآمد', 'rolino'),
+            $capability,
+            'rolino-revenue',
+            array($this, 'revenue_page')
         );
         
         // SMS Scenarios submenu
@@ -179,6 +192,14 @@ class Rolino_Admin_Menu {
     public function members_page() {
         $members_admin = new Rolino_Members_Admin();
         $members_admin->display_page();
+    }
+    
+    /**
+     * Revenue page
+     */
+    public function revenue_page() {
+        $revenue_admin = new Rolino_Revenue_Admin();
+        $revenue_admin->display_page();
     }
     
     /**
@@ -431,5 +452,87 @@ class Rolino_Admin_Menu {
     private function get_help_sidebar() {
         return '<p><strong>' . __('پشتیبانی:', 'rolino') . '</strong></p>' .
                '<p><a href="https://cine.ir" target="_blank">' . __('وب‌سایت سازنده', 'rolino') . '</a></p>';
+    }
+    
+    /**
+     * AJAX add plan group
+     */
+    public function ajax_add_plan_group() {
+        check_ajax_referer('rolino_plan_groups_nonce', '_wpnonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $group_name = sanitize_text_field($_POST['group_name'] ?? '');
+        
+        if (empty($group_name)) {
+            wp_send_json_error(array('message' => __('نام گروه الزامی است', 'rolino')));
+        }
+        
+        $plans = new Rolino_Plans();
+        $result = $plans->create_plan_group($group_name);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => __('گروه جدید با موفقیت ایجاد شد', 'rolino')));
+        } else {
+            wp_send_json_error(array('message' => __('خطا در ایجاد گروه', 'rolino')));
+        }
+    }
+    
+    /**
+     * AJAX update plan group
+     */
+    public function ajax_update_plan_group() {
+        check_ajax_referer('rolino_plan_groups_nonce', '_wpnonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $group_id = intval($_POST['group_id'] ?? 0);
+        $plan_ids = array_map('intval', $_POST['plan_ids'] ?? array());
+        
+        if (!$group_id) {
+            wp_send_json_error(array('message' => __('شناسه گروه نامعتبر است', 'rolino')));
+        }
+        
+        $plans = new Rolino_Plans();
+        
+        // Remove all plans from group
+        $plans->remove_plan_from_group(0, $group_id);
+        
+        // Add selected plans to group
+        foreach ($plan_ids as $plan_id) {
+            $plans->add_plan_to_group($plan_id, $group_id);
+        }
+        
+        wp_send_json_success(array('message' => __('گروه با موفقیت به‌روزرسانی شد', 'rolino')));
+    }
+    
+    /**
+     * AJAX delete plan group
+     */
+    public function ajax_delete_plan_group() {
+        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
+        }
+        
+        $group_id = intval($_POST['group_id'] ?? 0);
+        
+        if (!$group_id) {
+            wp_send_json_error(array('message' => __('شناسه گروه نامعتبر است', 'rolino')));
+        }
+        
+        $plans = new Rolino_Plans();
+        $result = $plans->delete_plan_group($group_id);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => __('گروه با موفقیت حذف شد', 'rolino')));
+        } else {
+            wp_send_json_error(array('message' => __('خطا در حذف گروه', 'rolino')));
+        }
     }
 }

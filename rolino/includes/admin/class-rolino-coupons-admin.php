@@ -167,7 +167,7 @@ class Rolino_Coupons_Admin {
      * AJAX save coupon
      */
     public function ajax_save_coupon() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -226,7 +226,7 @@ class Rolino_Coupons_Admin {
      * AJAX delete coupon
      */
     public function ajax_delete_coupon() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -268,7 +268,7 @@ class Rolino_Coupons_Admin {
      * AJAX generate coupon code
      */
     public function ajax_generate_coupon_code() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));

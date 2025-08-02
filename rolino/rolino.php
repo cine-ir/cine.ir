@@ -121,6 +121,7 @@ class Rolino {
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-coupons-admin.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-members-admin.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-sms-admin.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-revenue-admin.php';
         
         // Public classes
         require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-shortcodes.php';
@@ -141,6 +142,7 @@ class Rolino {
         new Rolino_Coupons_Admin();
         new Rolino_Members_Admin();
         new Rolino_SMS_Admin();
+        new Rolino_Revenue_Admin();
     }
     
     private function init_frontend() {

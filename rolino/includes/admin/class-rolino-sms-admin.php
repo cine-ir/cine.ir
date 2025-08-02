@@ -176,7 +176,7 @@ class Rolino_SMS_Admin {
      * AJAX save scenario
      */
     public function ajax_save_scenario() {
-        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        check_ajax_referer('rolino_add_scenario', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -216,7 +216,7 @@ class Rolino_SMS_Admin {
      * AJAX test SMS
      */
     public function ajax_test_sms() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_sms_scenarios', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -243,7 +243,7 @@ class Rolino_SMS_Admin {
      * AJAX auto save template
      */
     public function ajax_auto_save_template() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_sms_scenarios', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));

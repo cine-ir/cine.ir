@@ -209,7 +209,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_save_coupon&nonce=' + rolino_ajax.nonce;
+        formData += '&action=rolino_save_coupon';
         
         $('#save-coupon').prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
         
