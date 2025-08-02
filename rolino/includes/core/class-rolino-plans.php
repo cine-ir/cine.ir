@@ -122,7 +122,8 @@ class Rolino_Plans {
         
         $data = $this->sanitize_plan_data($data);
         
-        if ($this->validate_plan_data($data)) {
+        $validation_result = $this->validate_plan_data($data);
+        if ($validation_result['valid']) {
             $result = $wpdb->insert(
                 $this->table_name,
                 $data,
@@ -150,7 +151,8 @@ class Rolino_Plans {
         
         $data = $this->sanitize_plan_data($data);
         
-        if ($this->validate_plan_data($data)) {
+        $validation_result = $this->validate_plan_data($data);
+        if ($validation_result['valid']) {
             $result = $wpdb->update(
                 $this->table_name,
                 $data,
@@ -530,30 +532,30 @@ class Rolino_Plans {
      * Validate plan data
      * 
      * @param array $data
-     * @return bool
+     * @return array
      */
     public function validate_plan_data($data) {
         if (empty($data['plan_name'])) {
-            return false;
+            return array('valid' => false, 'message' => __('نام طرح الزامی است', 'rolino'));
         }
         
         if ($data['duration'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('مدت طرح باید بیشتر از صفر باشد', 'rolino'));
         }
         
         if ($data['price'] < 0) {
-            return false;
+            return array('valid' => false, 'message' => __('قیمت طرح نمی‌تواند منفی باشد', 'rolino'));
         }
         
         if ($data['credits'] < 0) {
-            return false;
+            return array('valid' => false, 'message' => __('اعتبار طرح نمی‌تواند منفی باشد', 'rolino'));
         }
         
         if ($data['active_sessions'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('تعداد جلسات همزمان باید بیشتر از صفر باشد', 'rolino'));
         }
         
-        return true;
+        return array('valid' => true, 'message' => '');
     }
     
     /**

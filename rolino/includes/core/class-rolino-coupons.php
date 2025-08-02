@@ -581,22 +581,22 @@ class Rolino_Coupons {
      * Validate coupon data
      * 
      * @param array $data
-     * @return bool
+     * @return array
      */
     public function validate_coupon_data($data) {
         if (empty($data['code']) || strlen($data['code']) < 4 || strlen($data['code']) > 8) {
-            return false;
+            return array('valid' => false, 'message' => __('کد تخفیف باید بین 4 تا 8 کاراکتر باشد', 'rolino'));
         }
         
         if (!in_array($data['type'], array(1, 2, 3))) {
-            return false;
+            return array('valid' => false, 'message' => __('نوع کد تخفیف نامعتبر است', 'rolino'));
         }
         
         if ($data['duration_days'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('مدت اعتبار کد تخفیف باید بیشتر از صفر باشد', 'rolino'));
         }
         
-        return true;
+        return array('valid' => true, 'message' => '');
     }
     
     /**
