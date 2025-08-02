@@ -120,6 +120,7 @@ class Rolino {
             require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-admin-menu.php';
             require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-plans-admin.php';
             require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-coupons-admin.php';
+            require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-members-admin.php';
             require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-sms-admin.php';
         }
         
