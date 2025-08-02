@@ -514,7 +514,7 @@ class Rolino_Admin_Menu {
      * AJAX delete plan group
      */
     public function ajax_delete_plan_group() {
-        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        check_ajax_referer('rolino_plan_groups_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));

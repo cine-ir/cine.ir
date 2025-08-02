@@ -142,7 +142,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_save_plan';
+        formData += '&action=rolino_save_plan&_wpnonce=' + $('#_wpnonce').val();
         
         $('#save-plan').prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
         

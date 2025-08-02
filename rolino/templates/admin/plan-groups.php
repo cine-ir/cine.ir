@@ -134,7 +134,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_add_plan_group';
+        formData += '&action=rolino_add_plan_group&_wpnonce=' + $('#_wpnonce').val();
         
         var submitBtn = $('#save-group');
         var originalText = submitBtn.text();
@@ -167,7 +167,7 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_update_plan_group';
+        formData += '&action=rolino_update_plan_group&_wpnonce=' + $('#_wpnonce').val();
         
         var submitBtn = $(this).find('.update-group-btn');
         var originalText = submitBtn.text();
@@ -208,7 +208,7 @@ jQuery(document).ready(function($) {
                 data: {
                     action: 'rolino_delete_plan_group',
                     group_id: groupId,
-                    nonce: rolino_ajax.nonce
+                    _wpnonce: $('#_wpnonce').val()
                 },
                 success: function(response) {
                     if (response.success) {
