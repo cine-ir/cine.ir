@@ -26,6 +26,11 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
 ?>
 
 <div class="rolino-plans-container">
+    <!-- Debug: Template is loading -->
+    <div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">
+        <p><strong>Debug:</strong> Template is loading. Plans count: <?php echo count($plans ?? array()); ?>, Grouped plans count: <?php echo count($grouped_plans ?? array()); ?>, Ungrouped plans count: <?php echo count($ungrouped_plans ?? array()); ?></p>
+    </div>
+    
     <?php if (!empty($user_credits)): ?>
         <div class="rolino-user-info">
             <div class="rolino-credits-info">
@@ -168,13 +173,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 <div class="rolino-plan-group">
                     <h3 class="group-title"><?php echo esc_html($group_name); ?></h3>
                     <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
-                        <?php 
-                        // Debug: Check if group_plans is array
-                        if (!is_array($group_plans)) {
-                            echo '<p>Debug: group_plans is not array: ' . gettype($group_plans) . '</p>';
-                            continue;
-                        }
-                        ?>
+
                         <?php foreach ($group_plans as $plan): ?>
                             <?php 
                             try {
