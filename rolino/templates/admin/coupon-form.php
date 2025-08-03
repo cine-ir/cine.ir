@@ -86,9 +86,22 @@ $coupon_types = array(
                 </td>
             </tr>
             
-
-            
-
+            <tr>
+                <th scope="row">
+                    <label for="single_buy_discount"><?php _e('تخفیف خرید تکی (%)', 'rolino'); ?></label>
+                </th>
+                <td>
+                    <input type="number" 
+                           id="single_buy_discount" 
+                           name="single_buy_discount" 
+                           value="<?php echo esc_attr($single_buy_discount ?? 0); ?>" 
+                           class="small-text" 
+                           min="0" 
+                           max="100">
+                    <span>%</span>
+                    <p class="description"><?php _e('درصد تخفیف برای خرید تکی اعتبار', 'rolino'); ?></p>
+                </td>
+            </tr>
             
             <tr>
                 <th scope="row">

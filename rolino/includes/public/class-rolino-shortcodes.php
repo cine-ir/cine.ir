@@ -289,6 +289,64 @@ class Rolino_Shortcodes {
     }
     
     /**
+     * Get single buy discount info
+     * 
+     * @param string $coupon_code
+     * @return array
+     */
+    public function get_single_buy_discount_info($coupon_code = '') {
+        if (empty($coupon_code)) {
+            return array(
+                'has_discount' => false,
+                'discount_percent' => 0,
+                'original_price' => 0,
+                'discounted_price' => 0
+            );
+        }
+        
+        $coupons = new Rolino_Coupons();
+        $coupon = $coupons->get_coupon_by_code($coupon_code);
+        
+        if (!$coupon || $coupon->status != 1) {
+            return array('has_discount' => false);
+        }
+        
+        // Check if coupon is expired
+        if (strtotime($coupon->end_date) < current_time('timestamp')) {
+            return array('has_discount' => false);
+        }
+        
+        // Check if user has already applied this coupon
+        if (get_current_user_id() && $coupons->is_coupon_applied_by_user($coupon->id, get_current_user_id())) {
+            return array('has_discount' => false);
+        }
+        
+        // Get single buy discount
+        $discount_percent = $coupons->get_single_buy_discount($coupon->id);
+        if (!$discount_percent || $discount_percent <= 0) {
+            return array('has_discount' => false);
+        }
+        
+        // Get single buy settings
+        $single_buy_settings = get_option('rolino_single_buy_settings', array(
+            'price' => 10000,
+            'credits' => 100,
+            'duration' => 30
+        ));
+        
+        $original_price = floatval($single_buy_settings['price']);
+        $discounted_price = $original_price * (1 - $discount_percent / 100);
+        
+        return array(
+            'has_discount' => true,
+            'discount_percent' => $discount_percent,
+            'original_price' => $original_price,
+            'discounted_price' => $discounted_price,
+            'savings' => $original_price - $discounted_price
+        );
+    }
+    
+    /**
      * Check if user can purchase plan
      * 
      * @param int $plan_id

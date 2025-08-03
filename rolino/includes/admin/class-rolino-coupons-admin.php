@@ -101,6 +101,7 @@ class Rolino_Coupons_Admin {
         $plans = new Rolino_Plans();
         $all_plans = $plans->get_active_plans();
         $coupon_discounts = array();
+        $single_buy_discount = 0;
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/coupon-form.php';
     }
@@ -119,7 +120,19 @@ class Rolino_Coupons_Admin {
         
         $plans = new Rolino_Plans();
         $all_plans = $plans->get_active_plans();
-        $coupon_discounts = $this->get_coupons()->get_coupon_plan_discounts($coupon_id);
+        
+        // Get coupon discounts and format them properly
+        $raw_discounts = $this->get_coupons()->get_coupon_plan_discounts($coupon_id);
+        $coupon_discounts = array();
+        
+        foreach ($raw_discounts as $discount) {
+            $coupon_discounts[$discount->plan_id] = array(
+                'percent' => intval($discount->discount_percent)
+            );
+        }
+        
+        // Get single buy discount
+        $single_buy_discount = $this->get_coupons()->get_single_buy_discount($coupon_id);
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/coupon-form.php';
     }
@@ -182,6 +195,19 @@ class Rolino_Coupons_Admin {
         );
         
         $plan_discounts = $_POST['plan_discounts'] ?? array();
+        $single_buy_discount = intval($_POST['single_buy_discount'] ?? 0);
+        
+        // Check for percentage coupon limit (only one allowed)
+        if ($coupon_data['type'] == 1 && $coupon_id == 0) {
+            global $wpdb;
+            $existing_percentage_coupons = $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}rolino_coupons WHERE type = 1 AND status = 1"
+            );
+            
+            if ($existing_percentage_coupons > 0) {
+                wp_send_json_error(array('message' => __('یک کد تخفیف درصدی دارید و بیش از این نمی‌توانید بسازید', 'rolino')));
+            }
+        }
         
         // Validation
         $validation_result = $this->get_coupons()->validate_coupon_data($coupon_data);
@@ -209,6 +235,11 @@ class Rolino_Coupons_Admin {
             // Update plan discounts
             $this->get_coupons()->remove_plan_discounts($coupon_id);
             $this->get_coupons()->add_plan_discounts($coupon_id, $plan_discounts);
+            
+            // Update single buy discount
+            if ($single_buy_discount > 0) {
+                $this->get_coupons()->update_single_buy_discount($coupon_id, $single_buy_discount);
+            }
             
             wp_send_json_success(array(
                 'message' => $message,

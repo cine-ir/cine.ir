@@ -92,6 +92,9 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <?php 
             $can_buy_single = !$active_subscription;
             $has_two_subscriptions = $active_subscription && $reserve_subscription;
+            
+            // Get single buy discount info
+            $single_buy_discount_info = $shortcodes->get_single_buy_discount_info(isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
             ?>
             <div class="rolino-plan-item single-buy-plan" data-plan-id="0" data-original-price="<?php echo $single_buy_settings['price']; ?>">
                 <div class="plan-header">
@@ -112,7 +115,13 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 </div>
                 
                 <div class="plan-price">
-                    <span class="price-now"><?php echo $shortcodes->format_price($single_buy_settings['price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                    <?php if ($single_buy_discount_info['has_discount']): ?>
+                        <span class="price-old"><?php echo $shortcodes->format_price($single_buy_discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                        <span class="price-now"><?php echo $shortcodes->format_price($single_buy_discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                        <span class="discount-badge"><?php echo $single_buy_discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
+                    <?php else: ?>
+                        <span class="price-now"><?php echo $shortcodes->format_price($single_buy_settings['price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="plan-actions">
@@ -484,6 +493,9 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
 .rolino-coupon-form {
     margin-bottom: 20px;
     text-align: center;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
 }
 
 .rolino-coupon-form input {
@@ -492,6 +504,24 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
     border-radius: 4px;
     margin-right: 10px;
     min-width: 200px;
+}
+
+.rolino-coupon-form button {
+    padding: 10px 20px;
+    background: #007cba;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.rolino-coupon-form button:hover {
+    background: #005a87;
+}
+
+.rolino-coupon-form button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
 }
 
 .rolino-plans-grid {
@@ -589,20 +619,25 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
 .price-old {
     text-decoration: line-through;
     color: #999;
-    font-size: 1em;
+    font-size: 0.9em;
     display: block;
     margin-bottom: 5px;
 }
 
 .discount-badge {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: #dc3545;
+    background: #28a745;
     color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
     font-size: 0.8em;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.savings-info {
+    color: #28a745;
+    font-weight: bold;
+    margin-top: 5px;
 }
 
 .plan-value {
