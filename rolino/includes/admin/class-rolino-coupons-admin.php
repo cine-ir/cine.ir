@@ -198,10 +198,14 @@ class Rolino_Coupons_Admin {
         $single_buy_discount = intval($_POST['single_buy_discount'] ?? 0);
         
         // Check for percentage coupon limit (only one allowed)
-        if ($coupon_data['type'] == 1 && $coupon_id == 0) {
+        if ($coupon_data['type'] == 1) {
             global $wpdb;
             $existing_percentage_coupons = $wpdb->get_var(
-                "SELECT COUNT(*) FROM {$wpdb->prefix}rolino_coupons WHERE type = 1 AND status = 1"
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}rolino_coupons 
+                     WHERE type = 1 AND status = 1 AND id != %d",
+                    $coupon_id
+                )
             );
             
             if ($existing_percentage_coupons > 0) {

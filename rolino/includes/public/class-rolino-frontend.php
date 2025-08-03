@@ -215,21 +215,14 @@ class Rolino_Frontend {
                 wp_send_json_error(array('message' => __('این کد تخفیف قبلاً اعمال شده است', 'rolino')));
             }
             
-            // Get all active plans to find the discount percentage
-            $all_plans = $plans->get_active_plans();
-            $discount_percent = 0;
+            // For percentage coupons, validate using any plan (they apply to all)
+            $validation_result = $coupons->validate_coupon($coupon_code, 1, get_current_user_id());
             
-            foreach ($all_plans as $plan) {
-                $plan_discount = $coupons->get_plan_discount_percent($coupon->id, $plan->id);
-                if ($plan_discount > 0) {
-                    $discount_percent = $plan_discount;
-                    break;
-                }
+            if (!$validation_result['valid']) {
+                wp_send_json_error(array('message' => $validation_result['message']));
             }
             
-            if ($discount_percent <= 0) {
-                wp_send_json_error(array('message' => __('این کد تخفیف برای هیچ طرحی اعمال نمی‌شود', 'rolino')));
-            }
+            $discount_percent = $validation_result['discount_percent'];
             
             // Mark coupon as applied by user
             $coupons->mark_coupon_applied($coupon->id, get_current_user_id());

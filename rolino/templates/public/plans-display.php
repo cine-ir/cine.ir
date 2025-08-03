@@ -267,67 +267,9 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <?php endforeach; ?>
         <?php endif; ?>
         
-        <?php if (empty($plans) && empty($grouped_plans) && !empty($ungrouped_plans)): ?>
-            <?php foreach ($ungrouped_plans as $plan): ?>
-                <?php 
-                try {
-                    $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
-                    $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
-                } catch (Exception $e) {
-                    $purchase_check = array('can_purchase' => false, 'reason' => 'خطا در بررسی طرح');
-                    $discount_info = array('has_discount' => false);
-                }
-                ?>
-                
-                <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id ?? 0; ?>" data-original-price="<?php echo $plan->price ?? 0; ?>">
-                    <div class="plan-header">
-                        <h3 class="plan-name"><?php echo esc_html($plan->plan_name ?? ''); ?></h3>
-                        <?php echo $shortcodes->get_plan_badge($plan); ?>
-                    </div>
-                    
-                    <div class="plan-details">
-                        <div class="plan-credits">
-                            <span class="label"><?php _e('اعتبار:', 'rolino'); ?></span>
-                            <span class="value"><?php echo number_format($plan->credits ?? 0); ?></span>
-                        </div>
-                        
-                        <div class="plan-duration">
-                            <span class="label"><?php _e('مدت:', 'rolino'); ?></span>
-                            <span class="value"><?php echo number_format($plan->duration ?? 0); ?> <?php _e('روز', 'rolino'); ?></span>
-                        </div>
-                        
-                        <?php if (($plan->active_sessions ?? 0) > 1): ?>
-                            <div class="plan-sessions">
-                                <span class="label"><?php _e('جلسات همزمان:', 'rolino'); ?></span>
-                                <span class="value"><?php echo number_format($plan->active_sessions ?? 0); ?></span>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="plan-price">
-                        <?php if ($discount_info['has_discount']): ?>
-                            <span class="price-old"><?php echo $shortcodes->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
-                            <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
-                            <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
-                        <?php else: ?>
-                            <span class="price-now"><?php echo $shortcodes->format_price($plan->price ?? 0); ?> <?php _e('تومان', 'rolino'); ?></span>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="plan-value">
-                        <span class="value-ratio"><?php echo $shortcodes->format_price($shortcodes->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
-                    </div>
-                    
-                    <div class="plan-actions">
-                        <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-        
-        <?php if (empty($plans) && empty($grouped_plans) && empty($ungrouped_plans)): ?>
+        <?php if (empty($plans) && empty($grouped_plans)): ?>
             <div class="rolino-no-plans">
-                <p><?php _e('هیچ طرحی در دسترس نیست.', 'rolino'); ?></p>
+                <p><?php _e('هیچ طرح فعالی یافت نشد', 'rolino'); ?></p>
             </div>
         <?php endif; ?>
     </div>

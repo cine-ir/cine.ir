@@ -286,11 +286,24 @@ class Rolino_Coupons {
         
         // Handle percentage coupon (type 1) - applies to all plans
         if ($coupon->type == 1) {
-            $discount_percent = $this->get_plan_discount_percent($coupon->id, $plan_id);
-            if ($discount_percent === false || $discount_percent <= 0) {
+            // For percentage coupons, we need to find any plan discount to get the percentage
+            // This coupon applies to all plans with the same percentage
+            $all_plans_discounts = $this->get_coupon_plan_discounts($coupon->id);
+            
+            if (empty($all_plans_discounts)) {
                 return array(
                     'valid' => false,
-                    'message' => __('این کد تخفیف برای این طرح اعمال نمی‌شود', 'rolino')
+                    'message' => __('این کد تخفیف برای هیچ طرحی تنظیم نشده است', 'rolino')
+                );
+            }
+            
+            // Get the first discount percentage (all should be the same for percentage coupons)
+            $discount_percent = intval($all_plans_discounts[0]->discount_percent);
+            
+            if ($discount_percent <= 0) {
+                return array(
+                    'valid' => false,
+                    'message' => __('این کد تخفیف برای هیچ طرحی اعمال نمی‌شود', 'rolino')
                 );
             }
             

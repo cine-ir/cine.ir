@@ -477,22 +477,6 @@ function rolino_init() {
 // Start the plugin
 add_action('plugins_loaded', 'rolino_init');
 
-// AJAX handlers for frontend
-add_action('wp_ajax_rolino_apply_coupon', 'rolino_apply_coupon_ajax');
-add_action('wp_ajax_nopriv_rolino_apply_coupon', 'rolino_apply_coupon_ajax');
-
-function rolino_apply_coupon_ajax() {
-    check_ajax_referer('rolino_frontend_nonce', 'nonce');
-    
-    $coupon_code = sanitize_text_field($_POST['coupon_code']);
-    $plan_id = intval($_POST['plan_id']);
-    
-    $coupons = new Rolino_Coupons();
-    $result = $coupons->validate_coupon($coupon_code, $plan_id);
-    
-    wp_send_json($result);
-}
-
 // AJAX handlers for buying plans
 add_action('wp_ajax_rolino_buy_plan', 'rolino_buy_plan_ajax');
 add_action('wp_ajax_nopriv_rolino_buy_plan', 'rolino_buy_plan_ajax');

@@ -80,6 +80,7 @@ jQuery(document).ready(function($) {
                     nonce: rolino_ajax.nonce
                 },
                 success: function(response) {
+                    console.log('Coupon response:', response); // Debug
                     if (response.success) {
                         showMessage(response.data.message, 'success');
                         updatePricesWithDiscount(response.data);
@@ -91,7 +92,8 @@ jQuery(document).ready(function($) {
                         localStorage.removeItem('rolino_applied_coupon');
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr, status, error); // Debug
                     showMessage('خطا در اتصال به سرور', 'error');
                 },
                 complete: function() {
