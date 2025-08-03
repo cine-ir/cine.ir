@@ -168,6 +168,13 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 <div class="rolino-plan-group">
                     <h3 class="group-title"><?php echo esc_html($group_name); ?></h3>
                     <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
+                        <?php 
+                        // Debug: Check if group_plans is array
+                        if (!is_array($group_plans)) {
+                            echo '<p>Debug: group_plans is not array: ' . gettype($group_plans) . '</p>';
+                            continue;
+                        }
+                        ?>
                         <?php foreach ($group_plans as $plan): ?>
                             <?php 
                             try {

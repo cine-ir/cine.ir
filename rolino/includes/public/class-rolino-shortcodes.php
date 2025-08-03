@@ -59,6 +59,18 @@ class Rolino_Shortcodes {
             $plans = $plans_obj->get_plans($args);
         }
         
+        // Debug: Check if plans exist
+        if (empty($plans)) {
+            // Try to get all plans regardless of status
+            $all_plans = $plans_obj->get_plans(array('status' => 'all'));
+            if (!empty($all_plans)) {
+                // Filter active plans manually
+                $plans = array_filter($all_plans, function($plan) {
+                    return is_object($plan) && isset($plan->status) && $plan->status == 1;
+                });
+            }
+        }
+        
         // Ensure plans are objects and have required properties
         if (!empty($plans)) {
             $plans = array_filter($plans, function($plan) {
@@ -95,6 +107,26 @@ class Rolino_Shortcodes {
             'credits' => intval(get_option('rolino_single_buy_credits', 5)),
             'price' => floatval(get_option('rolino_single_buy_price', 10000))
         );
+        
+        // Debug: Add debug information
+        if (empty($plans) && empty($grouped_plans) && empty($ungrouped_plans)) {
+            // Try to get all plans without any filtering
+            $all_plans = $plans_obj->get_plans(array('status' => 'all'));
+            $debug_info = array(
+                'total_plans' => count($all_plans),
+                'active_plans' => count(array_filter($all_plans, function($p) { return $p->status == 1; })),
+                'inactive_plans' => count(array_filter($all_plans, function($p) { return $p->status == 0; })),
+                'groups' => count($plans_obj->get_plan_groups()),
+                'ungrouped_count' => count($plans_obj->get_ungrouped_plans()),
+                'grouped_plans_keys' => array_keys($grouped_plans)
+            );
+            
+            // Add debug info to output
+            echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">';
+            echo '<h4>Debug Info:</h4>';
+            echo '<pre>' . print_r($debug_info, true) . '</pre>';
+            echo '</div>';
+        }
         
         // Pass shortcodes instance to template
         $shortcodes = $this;

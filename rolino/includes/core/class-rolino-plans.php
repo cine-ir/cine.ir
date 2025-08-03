@@ -328,20 +328,8 @@ class Rolino_Plans {
         foreach ($groups as $group) {
             $plans = $this->get_plans_by_group($group->id);
             if (!empty($plans)) {
-                $grouped_plans[] = array(
-                    'group' => $group,
-                    'plans' => $plans
-                );
+                $grouped_plans[$group->group_name] = $plans;
             }
-        }
-        
-        // Add ungrouped plans
-        $ungrouped_plans = $this->get_ungrouped_plans();
-        if (!empty($ungrouped_plans)) {
-            $grouped_plans[] = array(
-                'group' => (object) array('id' => 0, 'group_name' => 'سایر طرح‌ها'),
-                'plans' => $ungrouped_plans
-            );
         }
         
         return $grouped_plans;
