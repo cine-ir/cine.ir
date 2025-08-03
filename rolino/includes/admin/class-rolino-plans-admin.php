@@ -66,7 +66,8 @@ class Rolino_Plans_Admin {
             'limit' => $per_page,
             'offset' => $offset,
             'orderby' => $_GET['orderby'] ?? 'id',
-            'order' => $_GET['order'] ?? 'DESC'
+            'order' => $_GET['order'] ?? 'DESC',
+            'status' => 'all' // Show all plans including inactive ones
         );
         
         $plans = $this->get_plans()->get_plans($args);

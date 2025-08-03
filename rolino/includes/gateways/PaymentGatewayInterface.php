@@ -1,8 +1,6 @@
 <?php
 /**
  * Payment Gateway Interface
- * 
- * Defines the contract that all payment gateways must implement
  */
 
 if (!defined('ABSPATH')) {
@@ -12,55 +10,19 @@ if (!defined('ABSPATH')) {
 interface PaymentGatewayInterface {
     
     /**
-     * Process payment request
+     * Process payment
      * 
-     * @param array $payment_data Payment information
-     * @return array Result with success status and redirect URL or error message
+     * @param array $payment_data
+     * @return array
      */
     public function process_payment($payment_data);
     
     /**
-     * Verify payment callback
+     * Verify payment
      * 
-     * @param array $callback_data Callback data from payment gateway
-     * @param object $transaction Transaction object
-     * @return array Result with success status and verification data
-     */
-    public function verify_payment($callback_data, $transaction);
-    
-    /**
-     * Get gateway display name
-     * 
-     * @return string
-     */
-    public function get_name();
-    
-    /**
-     * Get gateway ID
-     * 
-     * @return string
-     */
-    public function get_id();
-    
-    /**
-     * Check if gateway is available
-     * 
-     * @return bool
-     */
-    public function is_available();
-    
-    /**
-     * Get gateway settings
-     * 
+     * @param array $callback_data
+     * @param object $transaction
      * @return array
      */
-    public function get_settings();
-    
-    /**
-     * Validate gateway settings
-     * 
-     * @param array $settings
-     * @return bool
-     */
-    public function validate_settings($settings);
+    public function verify_payment($callback_data, $transaction);
 }

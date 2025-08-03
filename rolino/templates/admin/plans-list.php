@@ -179,6 +179,11 @@ $sortable_columns = $plans_admin->get_sortable_columns();
 </div>
 
 <script>
+// Localize script for AJAX
+var rolinoAdmin = {
+    nonce: '<?php echo wp_create_nonce('rolino_admin_nonce'); ?>'
+};
+
 jQuery(document).ready(function($) {
     // Toggle plan status
     $('.toggle-plan-status').on('change', function() {

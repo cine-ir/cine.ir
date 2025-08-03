@@ -16,6 +16,7 @@ $submit_text = $is_edit ? __('به‌روزرسانی کد تخفیف', 'rolino'
 $defaults = array(
     'code' => '',
     'type' => 1,
+    'duration_days' => 30,
     'start_date' => '',
     'end_date' => '',
     'usage_limit' => 0,
@@ -69,6 +70,22 @@ $coupon_types = array(
                         <?php endforeach; ?>
                     </select>
                     <p class="description"><?php _e('نوع تخفیف اعمال شده', 'rolino'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="duration_days"><?php _e('مدت اعتبار (روز)', 'rolino'); ?> <span class="required">*</span></label>
+                </th>
+                <td>
+                    <input type="number" 
+                           id="duration_days" 
+                           name="duration_days" 
+                           value="<?php echo esc_attr($coupon_data['duration_days'] ?? 30); ?>" 
+                           class="small-text" 
+                           min="1" 
+                           required>
+                    <p class="description"><?php _e('مدت اعتبار کد تخفیف به روز', 'rolino'); ?></p>
                 </td>
             </tr>
             

@@ -121,6 +121,14 @@ class Rolino {
         require_once ROLINO_PLUGIN_PATH . 'includes/gateways/SampleGateway.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/gateways/ZarrinPalGateway.php';
         
+        // Ensure gateway classes are loaded
+        if (!class_exists('ZarrinPalGateway')) {
+            require_once ROLINO_PLUGIN_PATH . 'includes/gateways/ZarrinPalGateway.php';
+        }
+        if (!class_exists('SampleGateway')) {
+            require_once ROLINO_PLUGIN_PATH . 'includes/gateways/SampleGateway.php';
+        }
+        
         // Admin classes
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-admin-menu.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-plans-admin.php';
@@ -225,7 +233,8 @@ class Rolino {
             price DECIMAL(10,2) NOT NULL,
             credits INT NOT NULL DEFAULT 0,
             active_sessions INT NOT NULL DEFAULT 1,
-            status TINYINT NOT NULL DEFAULT 1 COMMENT '0=inactive, 1=active'
+            status TINYINT NOT NULL DEFAULT 1 COMMENT '0=inactive, 1=active',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) $charset_collate;";
         
         // 2. rolino_plan_groups
@@ -454,8 +463,16 @@ function rolino_buy_plan_ajax() {
     $coupon_code = sanitize_text_field($_POST['coupon_code'] ?? '');
     $gateway = sanitize_text_field($_POST['gateway'] ?? 'zarinpal');
     
-    $transactions = new Rolino_Transactions();
-    $result = $transactions->create_transaction(get_current_user_id(), $plan_id, $coupon_code, $gateway);
-    
-    wp_send_json($result);
+    try {
+        $transactions = new Rolino_Transactions();
+        $result = $transactions->create_transaction(get_current_user_id(), $plan_id, $coupon_code, $gateway);
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    } catch (Exception $e) {
+        wp_send_json_error(array('message' => $e->getMessage()));
+    }
 }

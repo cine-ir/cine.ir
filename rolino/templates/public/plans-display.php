@@ -37,7 +37,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 <div class="rolino-subscription-info">
                     <span class="subscription-label"><?php _e('اشتراک فعال:', 'rolino'); ?></span>
                     <span class="subscription-value"><?php echo esc_html($active_subscription->plan_name); ?></span>
-                    <span class="remaining-time"><?php echo $this->get_user_remaining_time_text($user_id); ?></span>
+                    <span class="remaining-time"><?php echo $shortcodes->get_user_remaining_time_text($user_id); ?></span>
                 </div>
             <?php endif; ?>
             
@@ -95,14 +95,14 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
         <?php if (!empty($plans)): ?>
             <?php foreach ($plans as $plan): ?>
                 <?php 
-                $purchase_check = $this->can_user_purchase_plan($plan->id, $user_id);
-                $discount_info = $this->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
                 ?>
                 
                 <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
                     <div class="plan-header">
                         <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
-                        <?php echo $this->get_plan_badge($plan); ?>
+                        <?php echo $shortcodes->get_plan_badge($plan); ?>
                     </div>
                     
                     <div class="plan-details">
@@ -126,16 +126,16 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     
                     <div class="plan-price">
                         <?php if ($discount_info['has_discount']): ?>
-                            <span class="price-old"><?php echo $this->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
-                            <span class="price-now"><?php echo $this->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                            <span class="price-old"><?php echo $shortcodes->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                            <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                             <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
                         <?php else: ?>
-                            <span class="price-now"><?php echo $this->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
+                            <span class="price-now"><?php echo $shortcodes->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
                         <?php endif; ?>
                     </div>
                     
                     <div class="plan-value">
-                        <span class="value-ratio"><?php echo $this->format_price($this->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
+                        <span class="value-ratio"><?php echo $shortcodes->format_price($shortcodes->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
                     </div>
                     
                     <div class="plan-actions">
@@ -172,14 +172,14 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
                         <?php foreach ($group_plans as $plan): ?>
                             <?php 
-                            $purchase_check = $this->can_user_purchase_plan($plan->id, $user_id);
-                            $discount_info = $this->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                            $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                            $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
                             ?>
                             
                             <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
                                 <div class="plan-header">
                                     <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
-                                    <?php echo $this->get_plan_badge($plan); ?>
+                                    <?php echo $shortcodes->get_plan_badge($plan); ?>
                                 </div>
                                 
                                 <div class="plan-details">
@@ -204,15 +204,15 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                                 <div class="plan-price">
                                     <?php if ($discount_info['has_discount']): ?>
                                         <span class="price-old"><?php echo $this->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
-                                        <span class="price-now"><?php echo $this->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                        <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                                         <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
                                     <?php else: ?>
-                                        <span class="price-now"><?php echo $this->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                        <span class="price-now"><?php echo $shortcodes->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
                                     <?php endif; ?>
                                 </div>
                                 
                                 <div class="plan-value">
-                                    <span class="value-ratio"><?php echo $this->format_price($this->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
+                                    <span class="value-ratio"><?php echo $shortcodes->format_price($shortcodes->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
                                 </div>
                                 
                                 <div class="plan-actions">
@@ -245,14 +245,14 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
                 <?php foreach ($ungrouped_plans as $plan): ?>
                     <?php 
-                    $purchase_check = $this->can_user_purchase_plan($plan->id, $user_id);
-                    $discount_info = $this->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                    $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                    $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
                     ?>
                     
                     <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
                         <div class="plan-header">
                             <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
-                            <?php echo $this->get_plan_badge($plan); ?>
+                            <?php echo $shortcodes->get_plan_badge($plan); ?>
                         </div>
                         
                         <div class="plan-details">

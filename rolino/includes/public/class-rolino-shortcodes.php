@@ -71,6 +71,9 @@ class Rolino_Shortcodes {
             'price' => floatval(get_option('rolino_single_buy_price', 10000))
         );
         
+        // Pass shortcodes instance to template
+        $shortcodes = $this;
+        
         include ROLINO_PLUGIN_PATH . 'templates/public/plans-display.php';
         
         return ob_get_clean();
