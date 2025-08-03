@@ -122,17 +122,20 @@ class Rolino_Plans {
         
         $data = $this->sanitize_plan_data($data);
         
-        if ($this->validate_plan_data($data)) {
-            $result = $wpdb->insert(
-                $this->table_name,
-                $data,
-                array('%s', '%d', '%f', '%d', '%d', '%d')
-            );
-            
-            if ($result !== false) {
-                do_action('rolino_plan_created', $wpdb->insert_id, $data);
-                return $wpdb->insert_id;
-            }
+        $validation_result = $this->validate_plan_data($data);
+        if (!$validation_result['valid']) {
+            return false;
+        }
+        
+        $result = $wpdb->insert(
+            $this->table_name,
+            $data,
+            array('%s', '%d', '%f', '%d', '%d', '%d')
+        );
+        
+        if ($result !== false) {
+            do_action('rolino_plan_created', $wpdb->insert_id, $data);
+            return $wpdb->insert_id;
         }
         
         return false;
@@ -150,19 +153,22 @@ class Rolino_Plans {
         
         $data = $this->sanitize_plan_data($data);
         
-        if ($this->validate_plan_data($data)) {
-            $result = $wpdb->update(
-                $this->table_name,
-                $data,
-                array('id' => $plan_id),
-                array('%s', '%d', '%f', '%d', '%d', '%d'),
-                array('%d')
-            );
-            
-            if ($result !== false) {
-                do_action('rolino_plan_updated', $plan_id, $data);
-                return true;
-            }
+        $validation_result = $this->validate_plan_data($data);
+        if (!$validation_result['valid']) {
+            return false;
+        }
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            $data,
+            array('id' => $plan_id),
+            array('%s', '%d', '%f', '%d', '%d', '%d'),
+            array('%d')
+        );
+        
+        if ($result !== false) {
+            do_action('rolino_plan_updated', $plan_id, $data);
+            return true;
         }
         
         return false;
@@ -322,20 +328,8 @@ class Rolino_Plans {
         foreach ($groups as $group) {
             $plans = $this->get_plans_by_group($group->id);
             if (!empty($plans)) {
-                $grouped_plans[] = array(
-                    'group' => $group,
-                    'plans' => $plans
-                );
+                $grouped_plans[$group->group_name] = $plans;
             }
-        }
-        
-        // Add ungrouped plans
-        $ungrouped_plans = $this->get_ungrouped_plans();
-        if (!empty($ungrouped_plans)) {
-            $grouped_plans[] = array(
-                'group' => (object) array('id' => 0, 'group_name' => 'سایر طرح‌ها'),
-                'plans' => $ungrouped_plans
-            );
         }
         
         return $grouped_plans;
@@ -469,7 +463,7 @@ class Rolino_Plans {
      * AJAX handler for toggling plan group membership
      */
     public function ajax_toggle_plan_group() {
-        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        check_ajax_referer('rolino_plan_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_die(__('شما اجازه انجام این عملیات را ندارید', 'rolino'));
@@ -530,30 +524,30 @@ class Rolino_Plans {
      * Validate plan data
      * 
      * @param array $data
-     * @return bool
+     * @return array
      */
-    private function validate_plan_data($data) {
+    public function validate_plan_data($data) {
         if (empty($data['plan_name'])) {
-            return false;
+            return array('valid' => false, 'message' => __('نام طرح الزامی است', 'rolino'));
         }
         
         if ($data['duration'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('مدت طرح باید بیشتر از صفر باشد', 'rolino'));
         }
         
         if ($data['price'] < 0) {
-            return false;
+            return array('valid' => false, 'message' => __('قیمت طرح نمی‌تواند منفی باشد', 'rolino'));
         }
         
         if ($data['credits'] < 0) {
-            return false;
+            return array('valid' => false, 'message' => __('اعتبار طرح نمی‌تواند منفی باشد', 'rolino'));
         }
         
         if ($data['active_sessions'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('تعداد جلسات همزمان باید بیشتر از صفر باشد', 'rolino'));
         }
         
-        return true;
+        return array('valid' => true, 'message' => '');
     }
     
     /**

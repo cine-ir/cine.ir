@@ -142,7 +142,13 @@ $sortable_columns = $plans_admin->get_sortable_columns();
                             </td>
                             
                             <td class="created-at column-created-at">
-                                <?php echo date_i18n('Y/m/d', strtotime($plan->created_at)); ?>
+                                <?php 
+                                if (isset($plan->created_at) && !empty($plan->created_at)) {
+                                    echo date_i18n('Y/m/d', strtotime($plan->created_at));
+                                } else {
+                                    echo date_i18n('Y/m/d', current_time('timestamp'));
+                                }
+                                ?>
                             </td>
                             
                             <td class="actions column-actions">
@@ -179,6 +185,12 @@ $sortable_columns = $plans_admin->get_sortable_columns();
 </div>
 
 <script>
+// Localize script for AJAX
+var rolinoAdmin = {
+    nonce: '<?php echo wp_create_nonce('rolino_admin_nonce'); ?>'
+};
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
 jQuery(document).ready(function($) {
     // Toggle plan status
     $('.toggle-plan-status').on('change', function() {
@@ -194,6 +206,10 @@ jQuery(document).ready(function($) {
                 plan_id: planId,
                 status: status,
                 nonce: rolinoAdmin.nonce
+            },
+            beforeSend: function() {
+                // Show loading state
+                $row.find('.toggle-plan-status').prop('disabled', true);
             },
             success: function(response) {
                 if (response.success) {
@@ -213,7 +229,11 @@ jQuery(document).ready(function($) {
                 // Revert toggle on error
                 $(this).prop('checked', !status);
                 alert('<?php echo esc_js(__('خطایی رخ داد', 'rolino')); ?>');
-            }.bind(this)
+            }.bind(this),
+            complete: function() {
+                // Re-enable toggle
+                $row.find('.toggle-plan-status').prop('disabled', false);
+            }
         });
     });
     

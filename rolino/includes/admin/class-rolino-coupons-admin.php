@@ -14,11 +14,19 @@ class Rolino_Coupons_Admin {
     private $coupons;
     
     public function __construct() {
-        $this->coupons = new Rolino_Coupons();
-        
         add_action('wp_ajax_rolino_save_coupon', array($this, 'ajax_save_coupon'));
         add_action('wp_ajax_rolino_delete_coupon', array($this, 'ajax_delete_coupon'));
         add_action('wp_ajax_rolino_generate_coupon_code', array($this, 'ajax_generate_coupon_code'));
+    }
+    
+    /**
+     * Get coupons instance
+     */
+    private function get_coupons() {
+        if (!isset($this->coupons)) {
+            $this->coupons = new Rolino_Coupons();
+        }
+        return $this->coupons;
     }
     
     /**
@@ -69,7 +77,7 @@ class Rolino_Coupons_Admin {
             $args['status'] = intval($_GET['status']);
         }
         
-        $coupons = $this->coupons->get_coupons($args);
+        $coupons = $this->get_coupons()->get_coupons($args);
         $total_coupons = $this->get_coupons_count($args);
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/coupons-list.php';
@@ -93,6 +101,7 @@ class Rolino_Coupons_Admin {
         $plans = new Rolino_Plans();
         $all_plans = $plans->get_active_plans();
         $coupon_discounts = array();
+        $single_buy_discount = 0;
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/coupon-form.php';
     }
@@ -103,7 +112,7 @@ class Rolino_Coupons_Admin {
      * @param int $coupon_id
      */
     private function display_edit_coupon_form($coupon_id) {
-        $coupon = $this->coupons->get_coupon($coupon_id);
+        $coupon = $this->get_coupons()->get_coupon($coupon_id);
         
         if (!$coupon) {
             wp_die(__('کد تخفیف یافت نشد', 'rolino'));
@@ -111,7 +120,19 @@ class Rolino_Coupons_Admin {
         
         $plans = new Rolino_Plans();
         $all_plans = $plans->get_active_plans();
-        $coupon_discounts = $this->coupons->get_coupon_plan_discounts($coupon_id);
+        
+        // Get coupon discounts and format them properly
+        $raw_discounts = $this->get_coupons()->get_coupon_plan_discounts($coupon_id);
+        $coupon_discounts = array();
+        
+        foreach ($raw_discounts as $discount) {
+            $coupon_discounts[$discount->plan_id] = array(
+                'percent' => intval($discount->discount_percent)
+            );
+        }
+        
+        // Get single buy discount
+        $single_buy_discount = $this->get_coupons()->get_single_buy_discount($coupon_id);
         
         include ROLINO_PLUGIN_PATH . 'templates/admin/coupon-form.php';
     }
@@ -134,21 +155,21 @@ class Rolino_Coupons_Admin {
         switch ($action) {
             case 'activate':
                 foreach ($coupon_ids as $coupon_id) {
-                    $this->coupons->update_coupon($coupon_id, array('status' => 1));
+                    $this->get_coupons()->update_coupon($coupon_id, array('status' => 1));
                 }
                 $this->add_admin_notice(__('کدهای تخفیف انتخابی فعال شدند', 'rolino'), 'success');
                 break;
                 
             case 'deactivate':
                 foreach ($coupon_ids as $coupon_id) {
-                    $this->coupons->update_coupon($coupon_id, array('status' => 0));
+                    $this->get_coupons()->update_coupon($coupon_id, array('status' => 0));
                 }
                 $this->add_admin_notice(__('کدهای تخفیف انتخابی غیرفعال شدند', 'rolino'), 'success');
                 break;
                 
             case 'delete':
                 foreach ($coupon_ids as $coupon_id) {
-                    $this->coupons->delete_coupon($coupon_id);
+                    $this->get_coupons()->delete_coupon($coupon_id);
                 }
                 $this->add_admin_notice(__('کدهای تخفیف انتخابی حذف شدند', 'rolino'), 'success');
                 break;
@@ -159,7 +180,7 @@ class Rolino_Coupons_Admin {
      * AJAX save coupon
      */
     public function ajax_save_coupon() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -169,40 +190,60 @@ class Rolino_Coupons_Admin {
         $coupon_data = array(
             'code' => sanitize_text_field($_POST['code'] ?? ''),
             'type' => intval($_POST['type'] ?? 1),
-            'start_date' => sanitize_text_field($_POST['start_date'] ?? ''),
-            'end_date' => sanitize_text_field($_POST['end_date'] ?? ''),
-            'usage_limit' => intval($_POST['usage_limit'] ?? 0),
+            'duration_days' => intval($_POST['duration_days'] ?? 30),
             'status' => intval($_POST['status'] ?? 1)
         );
         
         $plan_discounts = $_POST['plan_discounts'] ?? array();
+        $single_buy_discount = intval($_POST['single_buy_discount'] ?? 0);
+        
+        // Check for percentage coupon limit (only one allowed)
+        if ($coupon_data['type'] == 1) {
+            global $wpdb;
+            $existing_percentage_coupons = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}rolino_coupons 
+                     WHERE type = 1 AND status = 1 AND id != %d",
+                    $coupon_id
+                )
+            );
+            
+            if ($existing_percentage_coupons > 0) {
+                wp_send_json_error(array('message' => __('یک کد تخفیف درصدی دارید و بیش از این نمی‌توانید بسازید', 'rolino')));
+            }
+        }
         
         // Validation
-        $validation_result = $this->coupons->validate_coupon_data($coupon_data);
+        $validation_result = $this->get_coupons()->validate_coupon_data($coupon_data);
         if (!$validation_result['valid']) {
             wp_send_json_error(array('message' => $validation_result['message']));
         }
         
         // Check if code already exists (for new coupons or different coupon)
-        if ($this->coupons->coupon_code_exists($coupon_data['code'], $coupon_id)) {
+        if ($coupon_id == 0 && $this->get_coupons()->coupon_code_exists($coupon_data['code'])) {
             wp_send_json_error(array('message' => __('این کد تخفیف قبلاً استفاده شده است', 'rolino')));
         }
         
         if ($coupon_id > 0) {
             // Update existing coupon
-            $result = $this->coupons->update_coupon($coupon_id, $coupon_data);
+            $result = $this->get_coupons()->update_coupon($coupon_id, $coupon_data);
             $message = __('کد تخفیف با موفقیت به‌روزرسانی شد', 'rolino');
         } else {
             // Create new coupon
-            $result = $this->coupons->create_coupon($coupon_data);
+            $result = $this->get_coupons()->create_coupon($coupon_data);
             $coupon_id = $result;
             $message = __('کد تخفیف جدید با موفقیت ایجاد شد', 'rolino');
         }
         
         if ($result) {
             // Update plan discounts
-            $this->coupons->remove_plan_discounts($coupon_id);
-            $this->coupons->add_plan_discounts($coupon_id, $plan_discounts);
+            $this->get_coupons()->remove_plan_discounts($coupon_id);
+            $this->get_coupons()->add_plan_discounts($coupon_id, $plan_discounts);
+            
+            // Update single buy discount
+            if ($single_buy_discount > 0) {
+                $this->get_coupons()->update_single_buy_discount($coupon_id, $single_buy_discount);
+            }
             
             wp_send_json_success(array(
                 'message' => $message,
@@ -218,7 +259,7 @@ class Rolino_Coupons_Admin {
      * AJAX delete coupon
      */
     public function ajax_delete_coupon() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
@@ -247,7 +288,7 @@ class Rolino_Coupons_Admin {
             ));
         }
         
-        $result = $this->coupons->delete_coupon($coupon_id);
+        $result = $this->get_coupons()->delete_coupon($coupon_id);
         
         if ($result) {
             wp_send_json_success(array('message' => __('کد تخفیف با موفقیت حذف شد', 'rolino')));
@@ -260,13 +301,13 @@ class Rolino_Coupons_Admin {
      * AJAX generate coupon code
      */
     public function ajax_generate_coupon_code() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_coupon_nonce', '_wpnonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
         }
         
-        $code = $this->coupons->generate_coupon_code();
+        $code = $this->get_coupons()->generate_coupon_code();
         
         wp_send_json_success(array('code' => $code));
     }

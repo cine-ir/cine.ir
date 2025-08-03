@@ -34,7 +34,8 @@ class Rolino_Coupons {
         
         $data = $this->sanitize_coupon_data($data);
         
-        if (!$this->validate_coupon_data($data)) {
+        $validation_result = $this->validate_coupon_data($data);
+        if (!$validation_result['valid']) {
             return false;
         }
         
@@ -43,15 +44,20 @@ class Rolino_Coupons {
             return false;
         }
         
+        $start_date = current_time('Y-m-d H:i:s');
+        $end_date = date('Y-m-d H:i:s', strtotime('+' . $data['duration_days'] . ' days'));
+        
         $result = $wpdb->insert(
             $this->table_name,
             array(
                 'code' => $data['code'],
                 'type' => $data['type'],
                 'duration_days' => $data['duration_days'],
+                'start_date' => $start_date,
+                'end_date' => $end_date,
                 'status' => $data['status']
             ),
-            array('%s', '%d', '%d', '%d')
+            array('%s', '%d', '%d', '%s', '%s', '%d')
         );
         
         if ($result !== false) {
@@ -81,7 +87,8 @@ class Rolino_Coupons {
         
         $data = $this->sanitize_coupon_data($data);
         
-        if (!$this->validate_coupon_data($data)) {
+        $validation_result = $this->validate_coupon_data($data);
+        if (!$validation_result['valid']) {
             return false;
         }
         
@@ -98,16 +105,19 @@ class Rolino_Coupons {
             return false;
         }
         
+        $end_date = date('Y-m-d H:i:s', strtotime('+' . $data['duration_days'] . ' days'));
+        
         $result = $wpdb->update(
             $this->table_name,
             array(
                 'code' => $data['code'],
                 'type' => $data['type'],
                 'duration_days' => $data['duration_days'],
+                'end_date' => $end_date,
                 'status' => $data['status']
             ),
             array('id' => $coupon_id),
-            array('%s', '%d', '%d', '%d'),
+            array('%s', '%d', '%d', '%s', '%d'),
             array('%d')
         );
         
@@ -234,7 +244,7 @@ class Rolino_Coupons {
     }
     
     /**
-     * Validate coupon for user and plan
+     * Validate coupon for specific plan and user
      * 
      * @param string $coupon_code
      * @param int $plan_id
@@ -247,11 +257,10 @@ class Rolino_Coupons {
         if (!$coupon) {
             return array(
                 'valid' => false,
-                'message' => __('کد تخفیف نامعتبر است', 'rolino')
+                'message' => __('کد تخفیف یافت نشد', 'rolino')
             );
         }
         
-        // Check if coupon is active
         if ($coupon->status != 1) {
             return array(
                 'valid' => false,
@@ -259,26 +268,71 @@ class Rolino_Coupons {
             );
         }
         
-        // Check coupon type and validity
-        $validation_result = $this->validate_coupon_type($coupon, $user_id);
-        if (!$validation_result['valid']) {
-            return $validation_result;
-        }
-        
-        // Check if coupon applies to this plan
-        $discount_percent = $this->get_plan_discount_percent($coupon->id, $plan_id);
-        if ($discount_percent === false) {
+        // Check if coupon is expired
+        if (strtotime($coupon->end_date) < current_time('timestamp')) {
             return array(
                 'valid' => false,
-                'message' => __('این کد تخفیف برای این طرح قابل استفاده نیست', 'rolino')
+                'message' => __('کد تخفیف منقضی شده است', 'rolino')
+            );
+        }
+        
+        // Check if user has already applied this coupon
+        if ($user_id && $this->is_coupon_applied_by_user($coupon->id, $user_id)) {
+            return array(
+                'valid' => false,
+                'message' => __('این کد تخفیف قبلاً اعمال شده است', 'rolino')
+            );
+        }
+        
+        // Handle percentage coupon (type 1) - applies to all plans
+        if ($coupon->type == 1) {
+            // For percentage coupons, we need to find any plan discount to get the percentage
+            // This coupon applies to all plans with the same percentage
+            $all_plans_discounts = $this->get_coupon_plan_discounts($coupon->id);
+            
+            if (empty($all_plans_discounts)) {
+                return array(
+                    'valid' => false,
+                    'message' => __('این کد تخفیف برای هیچ طرحی تنظیم نشده است', 'rolino')
+                );
+            }
+            
+            // Get the first discount percentage (all should be the same for percentage coupons)
+            $discount_percent = intval($all_plans_discounts[0]->discount_percent);
+            
+            if ($discount_percent <= 0) {
+                return array(
+                    'valid' => false,
+                    'message' => __('این کد تخفیف برای هیچ طرحی اعمال نمی‌شود', 'rolino')
+                );
+            }
+            
+            return array(
+                'valid' => true,
+                'message' => __('کد تخفیف معتبر است', 'rolino'),
+                'discount_percent' => $discount_percent
+            );
+        }
+        
+        // Handle other coupon types
+        $type_validation = $this->validate_coupon_type($coupon, $user_id);
+        if (!$type_validation['valid']) {
+            return $type_validation;
+        }
+        
+        // Get discount for specific plan
+        $discount_percent = $this->get_plan_discount_percent($coupon->id, $plan_id);
+        if ($discount_percent === false || $discount_percent <= 0) {
+            return array(
+                'valid' => false,
+                'message' => __('این کد تخفیف برای این طرح اعمال نمی‌شود', 'rolino')
             );
         }
         
         return array(
             'valid' => true,
-            'coupon_id' => $coupon->id,
-            'discount_percent' => $discount_percent,
-            'message' => sprintf(__('تخفیف %d%% اعمال شد', 'rolino'), $discount_percent)
+            'message' => __('کد تخفیف معتبر است', 'rolino'),
+            'discount_percent' => $discount_percent
         );
     }
     
@@ -488,19 +542,21 @@ class Rolino_Coupons {
      * @param array $plan_discounts
      * @return bool
      */
-    private function add_plan_discounts($coupon_id, $plan_discounts) {
+    public function add_plan_discounts($coupon_id, $plan_discounts) {
         global $wpdb;
         
-        foreach ($plan_discounts as $plan_id => $discount_percent) {
-            $wpdb->insert(
-                $this->discounts_table,
-                array(
-                    'coupon_id' => $coupon_id,
-                    'plan_id' => intval($plan_id),
-                    'discount_percent' => intval($discount_percent)
-                ),
-                array('%d', '%d', '%d')
-            );
+        foreach ($plan_discounts as $plan_id => $discount_data) {
+            if (isset($discount_data['percent']) && $discount_data['percent'] > 0) {
+                $wpdb->insert(
+                    $this->discounts_table,
+                    array(
+                        'coupon_id' => $coupon_id,
+                        'plan_id' => intval($plan_id),
+                        'discount_percent' => intval($discount_data['percent'])
+                    ),
+                    array('%d', '%d', '%d')
+                );
+            }
         }
         
         return true;
@@ -512,7 +568,7 @@ class Rolino_Coupons {
      * @param int $coupon_id
      * @return bool
      */
-    private function remove_plan_discounts($coupon_id) {
+    public function remove_plan_discounts($coupon_id) {
         global $wpdb;
         
         return $wpdb->delete(
@@ -528,7 +584,7 @@ class Rolino_Coupons {
      * @param string $code
      * @return bool
      */
-    private function coupon_code_exists($code) {
+    public function coupon_code_exists($code) {
         global $wpdb;
         
         $count = $wpdb->get_var(
@@ -581,22 +637,22 @@ class Rolino_Coupons {
      * Validate coupon data
      * 
      * @param array $data
-     * @return bool
+     * @return array
      */
-    private function validate_coupon_data($data) {
+    public function validate_coupon_data($data) {
         if (empty($data['code']) || strlen($data['code']) < 4 || strlen($data['code']) > 8) {
-            return false;
+            return array('valid' => false, 'message' => __('کد تخفیف باید بین 4 تا 8 کاراکتر باشد', 'rolino'));
         }
         
         if (!in_array($data['type'], array(1, 2, 3))) {
-            return false;
+            return array('valid' => false, 'message' => __('نوع کد تخفیف نامعتبر است', 'rolino'));
         }
         
         if ($data['duration_days'] <= 0) {
-            return false;
+            return array('valid' => false, 'message' => __('مدت اعتبار کد تخفیف باید بیشتر از صفر باشد', 'rolino'));
         }
         
-        return true;
+        return array('valid' => true, 'message' => '');
     }
     
     /**
@@ -663,5 +719,103 @@ class Rolino_Coupons {
         }
         
         return $info;
+    }
+    
+    /**
+     * Update single buy discount for coupon
+     * 
+     * @param int $coupon_id
+     * @param int $discount_percent
+     * @return bool
+     */
+    public function update_single_buy_discount($coupon_id, $discount_percent) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'rolino_coupon_single_buy_discounts';
+        
+        // Check if record exists
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$table_name} WHERE coupon_id = %d",
+            $coupon_id
+        ));
+        
+        if ($existing) {
+            // Update existing record
+            return $wpdb->update(
+                $table_name,
+                array('discount_percent' => $discount_percent),
+                array('coupon_id' => $coupon_id),
+                array('%d'),
+                array('%d')
+            ) !== false;
+        } else {
+            // Insert new record
+            return $wpdb->insert(
+                $table_name,
+                array(
+                    'coupon_id' => $coupon_id,
+                    'discount_percent' => $discount_percent
+                ),
+                array('%d', '%d')
+            ) !== false;
+        }
+    }
+    
+    /**
+     * Get single buy discount for coupon
+     * 
+     * @param int $coupon_id
+     * @return int|false
+     */
+    public function get_single_buy_discount($coupon_id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'rolino_coupon_single_buy_discounts';
+        
+        return $wpdb->get_var($wpdb->prepare(
+            "SELECT discount_percent FROM {$table_name} WHERE coupon_id = %d",
+            $coupon_id
+        ));
+    }
+    
+    /**
+     * Check if coupon is already applied by user
+     * 
+     * @param int $coupon_id
+     * @param int $user_id
+     * @return bool
+     */
+    public function is_coupon_applied_by_user($coupon_id, $user_id) {
+        global $wpdb;
+        
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$this->activations_table} 
+             WHERE coupon_id = %d AND user_id = %d",
+            $coupon_id,
+            $user_id
+        ));
+        
+        return $count > 0;
+    }
+    
+    /**
+     * Mark coupon as applied by user
+     * 
+     * @param int $coupon_id
+     * @param int $user_id
+     * @return bool
+     */
+    public function mark_coupon_applied($coupon_id, $user_id) {
+        global $wpdb;
+        
+        return $wpdb->insert(
+            $this->activations_table,
+            array(
+                'coupon_id' => $coupon_id,
+                'user_id' => $user_id,
+                'applied_at' => current_time('mysql')
+            ),
+            array('%d', '%d', '%s')
+        ) !== false;
     }
 }

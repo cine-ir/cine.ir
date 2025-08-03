@@ -193,30 +193,78 @@ class Rolino_Frontend {
         $coupons = new Rolino_Coupons();
         $plans = new Rolino_Plans();
         
-        $validation_result = $coupons->validate_coupon($coupon_code, $plan_id, get_current_user_id());
-        
-        if (!$validation_result['valid']) {
-            wp_send_json_error(array('message' => $validation_result['message']));
+        // If plan_id is 0, we're applying to all plans (percentage coupon)
+        if ($plan_id == 0) {
+            $coupon = $coupons->get_coupon_by_code($coupon_code);
+            
+            if (!$coupon) {
+                wp_send_json_error(array('message' => __('کد تخفیف یافت نشد', 'rolino')));
+            }
+            
+            if ($coupon->status != 1) {
+                wp_send_json_error(array('message' => __('کد تخفیف غیرفعال است', 'rolino')));
+            }
+            
+            // Check if coupon is expired
+            if (strtotime($coupon->end_date) < current_time('timestamp')) {
+                wp_send_json_error(array('message' => __('کد تخفیف منقضی شده است', 'rolino')));
+            }
+            
+            // Check if user has already applied this coupon
+            if ($coupons->is_coupon_applied_by_user($coupon->id, get_current_user_id())) {
+                wp_send_json_error(array('message' => __('این کد تخفیف قبلاً اعمال شده است', 'rolino')));
+            }
+            
+            // For percentage coupons, validate using any plan (they apply to all)
+            $validation_result = $coupons->validate_coupon($coupon_code, 1, get_current_user_id());
+            
+            if (!$validation_result['valid']) {
+                wp_send_json_error(array('message' => $validation_result['message']));
+            }
+            
+            $discount_percent = $validation_result['discount_percent'];
+            
+            // Mark coupon as applied by user
+            $coupons->mark_coupon_applied($coupon->id, get_current_user_id());
+            
+            wp_send_json_success(array(
+                'message' => sprintf(__('کد تخفیف %d%% اعمال شد', 'rolino'), $discount_percent),
+                'discount_percent' => $discount_percent,
+                'applied_to_all' => true
+            ));
+        } else {
+            // Apply to specific plan
+            $validation_result = $coupons->validate_coupon($coupon_code, $plan_id, get_current_user_id());
+            
+            if (!$validation_result['valid']) {
+                wp_send_json_error(array('message' => $validation_result['message']));
+            }
+            
+            $plan = $plans->get_plan($plan_id);
+            if (!$plan) {
+                wp_send_json_error(array('message' => __('طرح یافت نشد', 'rolino')));
+            }
+            
+            $discount_percent = $validation_result['discount_percent'];
+            $original_price = floatval($plan->price);
+            $discounted_price = $original_price * (1 - $discount_percent / 100);
+            $savings = $original_price - $discounted_price;
+            
+            // Mark coupon as applied by user
+            $coupon = $coupons->get_coupon_by_code($coupon_code);
+            if ($coupon) {
+                $coupons->mark_coupon_applied($coupon->id, get_current_user_id());
+            }
+            
+            wp_send_json_success(array(
+                'message' => sprintf(__('کد تخفیف %d%% اعمال شد', 'rolino'), $discount_percent),
+                'discount_percent' => $discount_percent,
+                'original_price' => $original_price,
+                'discounted_price' => $discounted_price,
+                'savings' => $savings,
+                'formatted_savings' => number_format($savings, 0, '', ',')
+            ));
         }
-        
-        $plan = $plans->get_plan($plan_id);
-        if (!$plan) {
-            wp_send_json_error(array('message' => __('طرح یافت نشد', 'rolino')));
-        }
-        
-        $discount_percent = $validation_result['discount_percent'];
-        $original_price = floatval($plan->price);
-        $discounted_price = $original_price * (1 - $discount_percent / 100);
-        $savings = $original_price - $discounted_price;
-        
-        wp_send_json_success(array(
-            'message' => sprintf(__('کد تخفیف %d%% اعمال شد', 'rolino'), $discount_percent),
-            'discount_percent' => $discount_percent,
-            'original_price' => $original_price,
-            'discounted_price' => $discounted_price,
-            'savings' => $savings,
-            'formatted_savings' => number_format($savings, 0, '', ',')
-        ));
     }
     
     /**

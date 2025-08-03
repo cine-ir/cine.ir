@@ -16,14 +16,40 @@ class Rolino_Members_Admin {
     private $transactions;
     
     public function __construct() {
-        $this->credits = new Rolino_Credits();
-        $this->plans = new Rolino_Plans();
-        $this->transactions = new Rolino_Transactions();
-        
         add_action('wp_ajax_rolino_save_member', array($this, 'ajax_save_member'));
         add_action('wp_ajax_rolino_delete_member', array($this, 'ajax_delete_member'));
         add_action('wp_ajax_rolino_extend_membership', array($this, 'ajax_extend_membership'));
         add_action('wp_ajax_rolino_get_member_details', array($this, 'ajax_get_member_details'));
+    }
+    
+    /**
+     * Get credits instance
+     */
+    private function get_credits() {
+        if (!isset($this->credits)) {
+            $this->credits = new Rolino_Credits();
+        }
+        return $this->credits;
+    }
+    
+    /**
+     * Get plans instance
+     */
+    private function get_plans() {
+        if (!isset($this->plans)) {
+            $this->plans = new Rolino_Plans();
+        }
+        return $this->plans;
+    }
+    
+    /**
+     * Get transactions instance
+     */
+    private function get_transactions() {
+        if (!isset($this->transactions)) {
+            $this->transactions = new Rolino_Transactions();
+        }
+        return $this->transactions;
     }
     
     /**
@@ -258,7 +284,7 @@ class Rolino_Members_Admin {
             wp_send_json_error(array('message' => __('لطفاً تمام فیلدها را پر کنید', 'rolino')));
         }
         
-        $result = $this->credits->add_credits($user_id, $plan_id, $credits, $duration);
+        $result = $this->get_credits()->add_credits($user_id, $plan_id, $credits, $duration);
         
         if ($result) {
             wp_send_json_success(array('message' => __('اعتبار با موفقیت اضافه شد', 'rolino')));
@@ -283,7 +309,7 @@ class Rolino_Members_Admin {
             wp_send_json_error(array('message' => __('شناسه کاربر نامعتبر است', 'rolino')));
         }
         
-        $result = $this->credits->delete_user_credits($user_id);
+        $result = $this->get_credits()->delete_user_credits($user_id);
         
         if ($result) {
             wp_send_json_success(array('message' => __('اعتبارهای کاربر حذف شد', 'rolino')));
@@ -309,7 +335,7 @@ class Rolino_Members_Admin {
             wp_send_json_error(array('message' => __('لطفاً تعداد روزها را وارد کنید', 'rolino')));
         }
         
-        $result = $this->credits->extend_user_credits($user_id, $days);
+        $result = $this->get_credits()->extend_user_credits($user_id, $days);
         
         if ($result) {
             wp_send_json_success(array('message' => __('اعتبار تمدید شد', 'rolino')));

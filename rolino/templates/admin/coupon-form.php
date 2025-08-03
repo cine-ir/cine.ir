@@ -16,9 +16,7 @@ $submit_text = $is_edit ? __('به‌روزرسانی کد تخفیف', 'rolino'
 $defaults = array(
     'code' => '',
     'type' => 1,
-    'start_date' => '',
-    'end_date' => '',
-    'usage_limit' => 0,
+    'duration_days' => 30,
     'status' => 1
 );
 
@@ -74,44 +72,34 @@ $coupon_types = array(
             
             <tr>
                 <th scope="row">
-                    <label for="start_date"><?php _e('تاریخ شروع', 'rolino'); ?></label>
-                </th>
-                <td>
-                    <input type="date" 
-                           id="start_date" 
-                           name="start_date" 
-                           value="<?php echo esc_attr($coupon_data['start_date']); ?>" 
-                           class="regular-text">
-                    <p class="description"><?php _e('تاریخ شروع اعتبار کد تخفیف', 'rolino'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label for="end_date"><?php _e('تاریخ پایان', 'rolino'); ?></label>
-                </th>
-                <td>
-                    <input type="date" 
-                           id="end_date" 
-                           name="end_date" 
-                           value="<?php echo esc_attr($coupon_data['end_date']); ?>" 
-                           class="regular-text">
-                    <p class="description"><?php _e('تاریخ پایان اعتبار کد تخفیف', 'rolino'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label for="usage_limit"><?php _e('محدودیت استفاده', 'rolino'); ?></label>
+                    <label for="duration_days"><?php _e('مدت اعتبار (روز)', 'rolino'); ?> <span class="required">*</span></label>
                 </th>
                 <td>
                     <input type="number" 
-                           id="usage_limit" 
-                           name="usage_limit" 
-                           value="<?php echo esc_attr($coupon_data['usage_limit']); ?>" 
+                           id="duration_days" 
+                           name="duration_days" 
+                           value="<?php echo esc_attr($coupon_data['duration_days'] ?? 30); ?>" 
                            class="small-text" 
-                           min="0">
-                    <p class="description"><?php _e('تعداد دفعات مجاز استفاده (0 = نامحدود)', 'rolino'); ?></p>
+                           min="1" 
+                           required>
+                    <p class="description"><?php _e('مدت اعتبار کد تخفیف به روز', 'rolino'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <label for="single_buy_discount"><?php _e('تخفیف خرید تکی (%)', 'rolino'); ?></label>
+                </th>
+                <td>
+                    <input type="number" 
+                           id="single_buy_discount" 
+                           name="single_buy_discount" 
+                           value="<?php echo esc_attr($single_buy_discount ?? 0); ?>" 
+                           class="small-text" 
+                           min="0" 
+                           max="100">
+                    <span>%</span>
+                    <p class="description"><?php _e('درصد تخفیف برای خرید تکی اعتبار', 'rolino'); ?></p>
                 </td>
             </tr>
             
@@ -138,14 +126,20 @@ $coupon_types = array(
                 <tr>
                     <th style="width: 200px;"><?php _e('نام طرح', 'rolino'); ?></th>
                     <th style="width: 150px;"><?php _e('درصد تخفیف', 'rolino'); ?></th>
-                    <th style="width: 150px;"><?php _e('مبلغ تخفیف (تومان)', 'rolino'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!empty($all_plans)): ?>
                     <?php foreach ($all_plans as $plan): ?>
                         <?php 
-                        $plan_discount = isset($coupon_discounts[$plan->id]) ? $coupon_discounts[$plan->id] : array('percent' => 0, 'amount' => 0);
+                        $plan_discount = array('percent' => 0);
+                        if (isset($coupon_discounts[$plan->id])) {
+                            if (is_array($coupon_discounts[$plan->id])) {
+                                $plan_discount = $coupon_discounts[$plan->id];
+                            } else {
+                                $plan_discount = array('percent' => intval($coupon_discounts[$plan->id]));
+                            }
+                        }
                         ?>
                         <tr>
                             <td>
@@ -162,20 +156,11 @@ $coupon_types = array(
                                        step="0.1">
                                 <span>%</span>
                             </td>
-                            <td>
-                                <input type="number" 
-                                       name="plan_discounts[<?php echo $plan->id; ?>][amount]" 
-                                       value="<?php echo esc_attr($plan_discount['amount']); ?>" 
-                                       class="small-text" 
-                                       min="0" 
-                                       step="1000">
-                                <span>تومان</span>
-                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="3"><?php _e('هیچ طرح فعالی یافت نشد', 'rolino'); ?></td>
+                        <td colspan="2"><?php _e('هیچ طرح فعالی یافت نشد', 'rolino'); ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -193,6 +178,7 @@ $coupon_types = array(
 </div>
 
 <script>
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
 jQuery(document).ready(function($) {
     // Generate coupon code
     $('#generate-code').on('click', function() {
@@ -209,12 +195,12 @@ jQuery(document).ready(function($) {
         e.preventDefault();
         
         var formData = $(this).serialize();
-        formData += '&action=rolino_save_coupon&nonce=' + rolino_ajax.nonce;
+        formData += '&action=rolino_save_coupon&_wpnonce=' + $('#_wpnonce').val();
         
         $('#save-coupon').prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
         
         $.ajax({
-            url: rolino_ajax.ajax_url,
+            url: ajaxurl,
             type: 'POST',
             data: formData,
             success: function(response) {

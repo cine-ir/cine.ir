@@ -83,6 +83,12 @@ class Rolino {
     }
     
     public function initialize() {
+        // Create database tables if they don't exist
+        $this->create_database_tables();
+        
+        // Set default options if they don't exist
+        $this->set_default_options();
+        
         // Load required files
         $this->load_dependencies();
         
@@ -115,12 +121,21 @@ class Rolino {
         require_once ROLINO_PLUGIN_PATH . 'includes/gateways/SampleGateway.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/gateways/ZarrinPalGateway.php';
         
+        // Ensure gateway classes are loaded
+        if (!class_exists('ZarrinPalGateway')) {
+            require_once ROLINO_PLUGIN_PATH . 'includes/gateways/ZarrinPalGateway.php';
+        }
+        if (!class_exists('SampleGateway')) {
+            require_once ROLINO_PLUGIN_PATH . 'includes/gateways/SampleGateway.php';
+        }
+        
         // Admin classes
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-admin-menu.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-plans-admin.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-coupons-admin.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-members-admin.php';
         require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-sms-admin.php';
+        require_once ROLINO_PLUGIN_PATH . 'includes/admin/class-rolino-revenue-admin.php';
         
         // Public classes
         require_once ROLINO_PLUGIN_PATH . 'includes/public/class-rolino-shortcodes.php';
@@ -141,6 +156,7 @@ class Rolino {
         new Rolino_Coupons_Admin();
         new Rolino_Members_Admin();
         new Rolino_SMS_Admin();
+        new Rolino_Revenue_Admin();
     }
     
     private function init_frontend() {
@@ -198,133 +214,194 @@ class Rolino {
         
         $charset_collate = $wpdb->get_charset_collate();
         
-        // Table definitions
-        $tables = array();
-        
-        // 1. rolino_plans
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_plans (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            plan_name VARCHAR(255) NOT NULL,
-            duration INT NOT NULL COMMENT 'Duration in days',
-            price DECIMAL(10,2) NOT NULL,
-            credits INT NOT NULL DEFAULT 0,
-            active_sessions INT NOT NULL DEFAULT 1,
-            status TINYINT NOT NULL DEFAULT 1 COMMENT '0=inactive, 1=active'
+        // Plans table
+        $plans_table = $wpdb->prefix . 'rolino_plans';
+        $plans_sql = "CREATE TABLE $plans_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            plan_name varchar(255) NOT NULL,
+            description text,
+            price decimal(10,2) NOT NULL,
+            credits int(11) NOT NULL,
+            duration int(11) NOT NULL,
+            active_sessions int(11) DEFAULT 1,
+            status tinyint(1) DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
         ) $charset_collate;";
         
-        // 2. rolino_plan_groups
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_plan_groups (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            group_name VARCHAR(255) NOT NULL
+        // Credits table
+        $credits_table = $wpdb->prefix . 'rolino_credits';
+        $credits_sql = "CREATE TABLE $credits_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            plan_id mediumint(9) DEFAULT 0,
+            credit int(11) NOT NULL,
+            start_time datetime NOT NULL,
+            end_time datetime NOT NULL,
+            status tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY user_id (user_id),
+            KEY plan_id (plan_id),
+            KEY status (status)
         ) $charset_collate;";
         
-        // 3. rolino_plan_group_items
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_plan_group_items (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            group_id INT NOT NULL,
-            plan_id INT NOT NULL,
-            FOREIGN KEY (group_id) REFERENCES {$wpdb->prefix}rolino_plan_groups(id) ON DELETE CASCADE,
-            FOREIGN KEY (plan_id) REFERENCES {$wpdb->prefix}rolino_plans(id) ON DELETE CASCADE
+        // Transactions table
+        $transactions_table = $wpdb->prefix . 'rolino_transactions';
+        $transactions_sql = "CREATE TABLE $transactions_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) NOT NULL,
+            plan_id mediumint(9) DEFAULT 0,
+            amount decimal(10,2) NOT NULL,
+            gateway varchar(50) NOT NULL,
+            status varchar(20) DEFAULT 'pending',
+            transaction_id varchar(255),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY user_id (user_id),
+            KEY plan_id (plan_id),
+            KEY status (status)
         ) $charset_collate;";
         
-        // 4. rolino_transactions
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_transactions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            plan_id INT NOT NULL DEFAULT 0 COMMENT '0=single buy',
-            amount DECIMAL(10,2) NOT NULL,
-            gateway VARCHAR(50) NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending/completed/failed',
-            description TEXT,
-            transaction_date DATETIME DEFAULT CURRENT_TIMESTAMP
+        // Transaction meta table
+        $transaction_meta_table = $wpdb->prefix . 'rolino_transaction_meta';
+        $transaction_meta_sql = "CREATE TABLE $transaction_meta_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            transaction_id mediumint(9) NOT NULL,
+            meta_key varchar(255) NOT NULL,
+            meta_value longtext,
+            PRIMARY KEY (id),
+            KEY transaction_id (transaction_id),
+            KEY meta_key (meta_key)
         ) $charset_collate;";
         
-        // 5. rolino_credits
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_credits (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            plan_id INT NOT NULL DEFAULT 0 COMMENT '0=single buy',
-            start_time DATETIME NOT NULL,
-            end_time DATETIME NOT NULL,
-            credit INT NOT NULL DEFAULT 0 COMMENT 'Credit amount'
+        // Coupons table
+        $coupons_table = $wpdb->prefix . 'rolino_coupons';
+        $coupons_sql = "CREATE TABLE $coupons_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            code varchar(50) NOT NULL,
+            type tinyint(1) DEFAULT 1,
+            duration_days int(11) NOT NULL,
+            start_date DATETIME NOT NULL,
+            end_date DATETIME NOT NULL,
+            status tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY code (code)
         ) $charset_collate;";
         
-        // 6. rolino_coupons
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_coupons (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            code VARCHAR(8) NOT NULL UNIQUE COMMENT '4-8 characters',
-            type TINYINT NOT NULL COMMENT '1=global, 2=public, 3=exclusive',
-            duration_days INT NOT NULL COMMENT 'Duration in days',
-            status TINYINT NOT NULL DEFAULT 1 COMMENT '0=inactive, 1=active',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        // Coupon plan discounts table
+        $coupon_discounts_table = $wpdb->prefix . 'rolino_coupon_plan_discounts';
+        $coupon_discounts_sql = "CREATE TABLE $coupon_discounts_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            coupon_id mediumint(9) NOT NULL,
+            plan_id mediumint(9) NOT NULL,
+            discount_percent int(11) NOT NULL,
+            PRIMARY KEY (id),
+            KEY coupon_id (coupon_id),
+            KEY plan_id (plan_id)
         ) $charset_collate;";
         
-        // 7. rolino_coupon_plan_discounts
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_coupon_plan_discounts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            coupon_id INT NOT NULL,
-            plan_id INT NOT NULL DEFAULT 0 COMMENT '0=single buy',
-            discount_percent TINYINT NOT NULL,
-            FOREIGN KEY (coupon_id) REFERENCES {$wpdb->prefix}rolino_coupons(id) ON DELETE CASCADE
+        // Coupon single buy discounts table
+        $coupon_single_buy_table = $wpdb->prefix . 'rolino_coupon_single_buy_discounts';
+        $coupon_single_buy_sql = "CREATE TABLE $coupon_single_buy_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            coupon_id mediumint(9) NOT NULL,
+            discount_percent int(11) NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY coupon_id (coupon_id)
         ) $charset_collate;";
         
-        // 8. rolino_coupon_user_activations
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_coupon_user_activations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            coupon_id INT NOT NULL,
-            user_id INT NOT NULL,
-            start_time DATETIME NOT NULL,
-            end_time DATETIME NOT NULL,
-            FOREIGN KEY (coupon_id) REFERENCES {$wpdb->prefix}rolino_coupons(id) ON DELETE CASCADE
+        // Coupon user activations table
+        $coupon_activations_table = $wpdb->prefix . 'rolino_coupon_user_activations';
+        $coupon_activations_sql = "CREATE TABLE $coupon_activations_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            coupon_id mediumint(9) NOT NULL,
+            user_id bigint(20) NOT NULL,
+            applied_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY coupon_id (coupon_id),
+            KEY user_id (user_id)
         ) $charset_collate;";
         
-        // 9. rolino_sms_scenarios
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_sms_scenarios (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            scenario_type TINYINT NOT NULL COMMENT '1-5 scenarios',
-            days_offset INT NULL COMMENT 'null for immediate scenarios',
-            message_template TEXT NOT NULL COMMENT 'Includes variables',
-            status TINYINT NOT NULL DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        // SMS scenarios table
+        $sms_scenarios_table = $wpdb->prefix . 'rolino_sms_scenarios';
+        $sms_scenarios_sql = "CREATE TABLE $sms_scenarios_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            scenario_name varchar(255) NOT NULL,
+            template text NOT NULL,
+            variables text,
+            status tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
         ) $charset_collate;";
         
-        // 10. rolino_sms_logs
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_sms_logs (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            scenario_id INT NOT NULL,
-            message_text TEXT NOT NULL COMMENT 'After variable replacement',
-            sent_status TINYINT NOT NULL COMMENT '0=fail, 1=success',
-            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (scenario_id) REFERENCES {$wpdb->prefix}rolino_sms_scenarios(id) ON DELETE CASCADE
+        // Plan groups table
+        $plan_groups_table = $wpdb->prefix . 'rolino_plan_groups';
+        $plan_groups_sql = "CREATE TABLE $plan_groups_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            group_name varchar(255) NOT NULL,
+            description text,
+            status tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
         ) $charset_collate;";
         
-        // 11. rolino_sms_queue (optional)
-        $tables[] = "CREATE TABLE {$wpdb->prefix}rolino_sms_queue (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            scenario_id INT NOT NULL,
-            scheduled_time DATETIME NOT NULL,
-            status TINYINT NOT NULL DEFAULT 0 COMMENT '0=queued, 1=sent, 2=failed',
-            try_count INT NOT NULL DEFAULT 0,
-            FOREIGN KEY (scenario_id) REFERENCES {$wpdb->prefix}rolino_sms_scenarios(id) ON DELETE CASCADE
+        // Plan group relationships table
+        $plan_group_relations_table = $wpdb->prefix . 'rolino_plan_group_relations';
+        $plan_group_relations_sql = "CREATE TABLE $plan_group_relations_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            group_id mediumint(9) NOT NULL,
+            plan_id mediumint(9) NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY group_plan (group_id, plan_id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
-        foreach ($tables as $table) {
-            dbDelta($table);
+        dbDelta($plans_sql);
+        dbDelta($credits_sql);
+        dbDelta($transactions_sql);
+        dbDelta($transaction_meta_sql);
+        dbDelta($coupons_sql);
+        dbDelta($coupon_discounts_sql);
+        dbDelta($coupon_single_buy_sql);
+        dbDelta($coupon_activations_sql);
+        dbDelta($sms_scenarios_sql);
+        dbDelta($plan_groups_sql);
+        dbDelta($plan_group_relations_sql);
+    }
+    
+    private function update_existing_tables() {
+        global $wpdb;
+        
+        // Update rolino_coupons table
+        $coupons_table = $wpdb->prefix . 'rolino_coupons';
+        
+        // Check if start_date column exists
+        $start_date_exists = $wpdb->get_var("SHOW COLUMNS FROM $coupons_table LIKE 'start_date'");
+        if (!$start_date_exists) {
+            $wpdb->query("ALTER TABLE $coupons_table ADD COLUMN start_date DATETIME NOT NULL AFTER duration_days");
         }
         
-        // Insert default SMS scenarios
-        $this->insert_default_sms_scenarios();
+        // Check if end_date column exists
+        $end_date_exists = $wpdb->get_var("SHOW COLUMNS FROM $coupons_table LIKE 'end_date'");
+        if (!$end_date_exists) {
+            $wpdb->query("ALTER TABLE $coupons_table ADD COLUMN end_date DATETIME NOT NULL AFTER start_date");
+        }
         
-        // Update database version
-        update_option('rolino_db_version', ROLINO_VERSION);
+        // Update existing coupons with default dates
+        $wpdb->query("UPDATE $coupons_table SET start_date = created_at, end_date = DATE_ADD(created_at, INTERVAL duration_days DAY) WHERE start_date = '0000-00-00 00:00:00' OR end_date = '0000-00-00 00:00:00'");
     }
     
     private function insert_default_sms_scenarios() {
         global $wpdb;
+        
+        // Check if scenarios already exist
+        $scenarios_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}rolino_sms_scenarios");
+        if ($scenarios_count > 0) {
+            return; // Scenarios already exist
+        }
         
         $default_scenarios = array(
             array(
@@ -369,14 +446,26 @@ class Rolino {
     
     private function set_default_options() {
         // Single buy settings
-        add_option('rolino_single_buy_duration', 30);
-        add_option('rolino_single_buy_credits', 5);
-        add_option('rolino_single_buy_active', 1);
+        if (get_option('rolino_single_buy_duration') === false) {
+            add_option('rolino_single_buy_duration', 30);
+        }
+        if (get_option('rolino_single_buy_credits') === false) {
+            add_option('rolino_single_buy_credits', 5);
+        }
+        if (get_option('rolino_single_buy_active') === false) {
+            add_option('rolino_single_buy_active', 1);
+        }
         
         // SMS settings
-        add_option('rolino_sms_enabled', 1);
-        add_option('rolino_sms_api_key', '');
-        add_option('rolino_sms_sender', '');
+        if (get_option('rolino_sms_enabled') === false) {
+            add_option('rolino_sms_enabled', 1);
+        }
+        if (get_option('rolino_sms_api_key') === false) {
+            add_option('rolino_sms_api_key', '');
+        }
+        if (get_option('rolino_sms_sender') === false) {
+            add_option('rolino_sms_sender', '');
+        }
     }
 }
 
@@ -387,22 +476,6 @@ function rolino_init() {
 
 // Start the plugin
 add_action('plugins_loaded', 'rolino_init');
-
-// AJAX handlers for frontend
-add_action('wp_ajax_rolino_apply_coupon', 'rolino_apply_coupon_ajax');
-add_action('wp_ajax_nopriv_rolino_apply_coupon', 'rolino_apply_coupon_ajax');
-
-function rolino_apply_coupon_ajax() {
-    check_ajax_referer('rolino_frontend_nonce', 'nonce');
-    
-    $coupon_code = sanitize_text_field($_POST['coupon_code']);
-    $plan_id = intval($_POST['plan_id']);
-    
-    $coupons = new Rolino_Coupons();
-    $result = $coupons->validate_coupon($coupon_code, $plan_id);
-    
-    wp_send_json($result);
-}
 
 // AJAX handlers for buying plans
 add_action('wp_ajax_rolino_buy_plan', 'rolino_buy_plan_ajax');
@@ -420,8 +493,16 @@ function rolino_buy_plan_ajax() {
     $coupon_code = sanitize_text_field($_POST['coupon_code'] ?? '');
     $gateway = sanitize_text_field($_POST['gateway'] ?? 'zarinpal');
     
-    $transactions = new Rolino_Transactions();
-    $result = $transactions->create_transaction(get_current_user_id(), $plan_id, $coupon_code, $gateway);
-    
-    wp_send_json($result);
+    try {
+        $transactions = new Rolino_Transactions();
+        $result = $transactions->create_transaction(get_current_user_id(), $plan_id, $coupon_code, $gateway);
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    } catch (Exception $e) {
+        wp_send_json_error(array('message' => $e->getMessage()));
+    }
 }

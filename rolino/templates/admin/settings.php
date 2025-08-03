@@ -17,12 +17,21 @@ $sms_enabled = get_option('rolino_sms_enabled', 0);
 $sms_api_key = get_option('rolino_sms_api_key', '');
 $sms_sender = get_option('rolino_sms_sender', '');
 
+// Get gateway settings
+$zarinpal_settings = get_option('rolino_gateway_zarinpal_settings', array());
+$zarinpal_enabled = isset($zarinpal_settings['enabled']) ? $zarinpal_settings['enabled'] : 0;
+$zarinpal_test_mode = isset($zarinpal_settings['test_mode']) ? $zarinpal_settings['test_mode'] : 0;
+$zarinpal_merchant_id = isset($zarinpal_settings['merchant_id']) ? $zarinpal_settings['merchant_id'] : '';
+
+$sample_settings = get_option('rolino_gateway_sample_settings', array());
+$sample_enabled = isset($sample_settings['enabled']) ? $sample_settings['enabled'] : 0;
+
 ?>
 
 <div class="wrap">
     <h1><?php _e('تنظیمات رولینو', 'rolino'); ?></h1>
     
-    <form method="post" action="">
+    <form method="post" action="<?php echo admin_url('admin.php?page=rolino-settings'); ?>">
         <?php wp_nonce_field('rolino_settings', '_wpnonce'); ?>
         <input type="hidden" name="save_settings" value="1">
         
@@ -110,12 +119,6 @@ $sms_sender = get_option('rolino_sms_sender', '');
         
         <!-- ZarinPal Gateway -->
         <h3><?php _e('زرین‌پال', 'rolino'); ?></h3>
-        <?php
-        $zarinpal_settings = get_option('rolino_gateway_zarinpal_settings', array());
-        $zarinpal_enabled = $zarinpal_settings['enabled'] ?? false;
-        $zarinpal_test_mode = $zarinpal_settings['test_mode'] ?? true;
-        $zarinpal_merchant_id = $zarinpal_settings['merchant_id'] ?? '';
-        ?>
         
         <table class="form-table">
             <tr>
@@ -153,10 +156,6 @@ $sms_sender = get_option('rolino_sms_sender', '');
         
         <!-- Sample Gateway -->
         <h3><?php _e('درگاه نمونه', 'rolino'); ?></h3>
-        <?php
-        $sample_settings = get_option('rolino_gateway_sample_settings', array());
-        $sample_enabled = $sample_settings['enabled'] ?? false;
-        ?>
         
         <table class="form-table">
             <tr>

@@ -29,9 +29,8 @@ $all_plans = $plans_obj->get_plans(array('status' => 'all'));
         <div id="new-group-form" class="postbox" style="display: none;">
             <h2 class="hndle"><?php _e('گروه جدید', 'rolino'); ?></h2>
             <div class="inside">
-                <form method="post" action="">
-                    <?php wp_nonce_field('rolino_admin_action', '_wpnonce'); ?>
-                    <input type="hidden" name="action" value="add_group">
+                <form id="add-group-form">
+                    <?php wp_nonce_field('rolino_plan_groups_nonce', '_wpnonce'); ?>
                     
                     <table class="form-table">
                         <tr>
@@ -46,7 +45,7 @@ $all_plans = $plans_obj->get_plans(array('status' => 'all'));
                     </table>
                     
                     <p class="submit">
-                        <input type="submit" class="button-primary" value="<?php _e('ایجاد گروه', 'rolino'); ?>">
+                        <button type="submit" class="button-primary" id="save-group"><?php _e('ایجاد گروه', 'rolino'); ?></button>
                         <a href="#" id="cancel-new-group" class="button"><?php _e('لغو', 'rolino'); ?></a>
                     </p>
                 </form>
@@ -67,9 +66,8 @@ $all_plans = $plans_obj->get_plans(array('status' => 'all'));
                     </h2>
                     
                     <div class="inside">
-                        <form method="post" action="">
-                            <?php wp_nonce_field('rolino_admin_action', '_wpnonce'); ?>
-                            <input type="hidden" name="action" value="update_group_plans">
+                        <form class="update-group-form" data-group-id="<?php echo $group->id; ?>">
+                            <?php wp_nonce_field('rolino_plan_groups_nonce', '_wpnonce'); ?>
                             <input type="hidden" name="group_id" value="<?php echo $group->id; ?>">
                             
                             <p class="description">
@@ -100,7 +98,7 @@ $all_plans = $plans_obj->get_plans(array('status' => 'all'));
                             </div>
                             
                             <p class="submit">
-                                <input type="submit" class="button-primary" value="<?php _e('به‌روزرسانی گروه', 'rolino'); ?>">
+                                <button type="submit" class="button-primary update-group-btn"><?php _e('به‌روزرسانی گروه', 'rolino'); ?></button>
                             </p>
                         </form>
                     </div>
@@ -131,6 +129,71 @@ jQuery(document).ready(function($) {
         $('#group_name').val('');
     });
     
+    // Add new group
+    $('#add-group-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = $(this).serialize();
+        formData += '&action=rolino_add_plan_group&_wpnonce=' + $('#_wpnonce').val();
+        
+        var submitBtn = $('#save-group');
+        var originalText = submitBtn.text();
+        
+        submitBtn.prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
+        
+        $.ajax({
+            url: rolino_ajax.ajax_url,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                    location.reload();
+                } else {
+                    alert(response.data.message || '<?php _e('خطا در ایجاد گروه', 'rolino'); ?>');
+                }
+            },
+            error: function() {
+                alert('<?php _e('خطا در ارتباط با سرور', 'rolino'); ?>');
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+    
+    // Update group plans
+    $('.update-group-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = $(this).serialize();
+        formData += '&action=rolino_update_plan_group&_wpnonce=' + $('#_wpnonce').val();
+        
+        var submitBtn = $(this).find('.update-group-btn');
+        var originalText = submitBtn.text();
+        
+        submitBtn.prop('disabled', true).text('<?php _e('در حال به‌روزرسانی...', 'rolino'); ?>');
+        
+        $.ajax({
+            url: rolino_ajax.ajax_url,
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.data.message);
+                } else {
+                    alert(response.data.message || '<?php _e('خطا در به‌روزرسانی گروه', 'rolino'); ?>');
+                }
+            },
+            error: function() {
+                alert('<?php _e('خطا در ارتباط با سرور', 'rolino'); ?>');
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).text(originalText);
+            }
+        });
+    });
+    
     // Delete group
     $('.delete-group').on('click', function(e) {
         e.preventDefault();
@@ -139,7 +202,26 @@ jQuery(document).ready(function($) {
         var groupName = $(this).data('group-name');
         
         if (confirm('<?php echo esc_js(__('آیا از حذف گروه', 'rolino')); ?> "' + groupName + '" <?php echo esc_js(__('مطمئن هستید؟ طرح‌های موجود در این گروه حذف نخواهند شد.', 'rolino')); ?>')) {
-            window.location.href = '<?php echo admin_url('admin.php?page=rolino-plan-groups'); ?>&action=delete_group&group_id=' + groupId + '&_wpnonce=<?php echo wp_create_nonce('rolino_admin_action'); ?>';
+            $.ajax({
+                url: rolino_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'rolino_delete_plan_group',
+                    group_id: groupId,
+                    _wpnonce: $('#_wpnonce').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.data.message);
+                        location.reload();
+                    } else {
+                        alert(response.data.message || '<?php _e('خطا در حذف گروه', 'rolino'); ?>');
+                    }
+                },
+                error: function() {
+                    alert('<?php _e('خطا در ارتباط با سرور', 'rolino'); ?>');
+                }
+            });
         }
     });
 });

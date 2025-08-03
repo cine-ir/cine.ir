@@ -68,7 +68,7 @@ jQuery(document).ready(function($) {
             var originalText = button.text();
             
             // Show loading state
-            button.text('در حال بررسی...').addClass('rolino-loading');
+            button.text('در حال بررسی...').prop('disabled', true);
             
             $.ajax({
                 url: rolino_ajax.ajax_url,
@@ -76,22 +76,28 @@ jQuery(document).ready(function($) {
                 data: {
                     action: 'rolino_apply_coupon',
                     coupon_code: couponCode,
-                    plan_id: button.data('plan-id') || 0,
+                    plan_id: 0, // Apply to all plans
                     nonce: rolino_ajax.nonce
                 },
                 success: function(response) {
+                    console.log('Coupon response:', response); // Debug
                     if (response.success) {
-                        showMessage('کد تخفیف اعمال شد!', 'success');
+                        showMessage(response.data.message, 'success');
                         updatePricesWithDiscount(response.data);
+                        // Store applied coupon code
+                        localStorage.setItem('rolino_applied_coupon', couponCode);
                     } else {
                         showMessage(response.data.message || 'کد تخفیف نامعتبر است', 'error');
+                        // Clear any previously applied coupon
+                        localStorage.removeItem('rolino_applied_coupon');
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr, status, error); // Debug
                     showMessage('خطا در اتصال به سرور', 'error');
                 },
                 complete: function() {
-                    button.text(originalText).removeClass('rolino-loading');
+                    button.text(originalText).prop('disabled', false);
                 }
             });
         });
@@ -250,32 +256,37 @@ jQuery(document).ready(function($) {
     function updatePricesWithDiscount(discountData) {
         $('.rolino-plan-item').each(function() {
             var planId = $(this).data('plan-id');
-            var planDiscount = discountData.plans[planId];
+            var originalPrice = parseFloat($(this).data('original-price'));
             
-            if (planDiscount) {
-                var priceContainer = $(this).find('.rolino-plan-price');
-                var originalPrice = parseFloat($(this).data('original-price'));
-                var discountedPrice = originalPrice * (1 - planDiscount.discount_percent / 100);
+            // Apply discount to all plans if it's a percentage coupon
+            if (discountData.discount_percent && discountData.discount_percent > 0) {
+                var discountedPrice = originalPrice * (1 - discountData.discount_percent / 100);
+                var savings = originalPrice - discountedPrice;
+                
+                var priceContainer = $(this).find('.plan-price');
+                
+                // Update price display
+                if (priceContainer.find('.price-old').length === 0) {
+                    // Add old price
+                    priceContainer.prepend('<span class="price-old">' + formatPrice(originalPrice) + ' تومان</span>');
+                }
                 
                 // Update current price
-                priceContainer.find('.price-now').text(formatPrice(discountedPrice));
+                priceContainer.find('.price-now').text(formatPrice(discountedPrice) + ' تومان');
                 
-                // Show discount percentage
-                if (priceContainer.find('.discount-percent').length === 0) {
-                    priceContainer.append('<p class="discount-percent">' + planDiscount.discount_percent + '% تخفیف</p>');
-                }
-                
-                // Show old price
-                var oldPriceContainer = $(this).find('.rolino-plan-old-price');
-                if (oldPriceContainer.length === 0) {
-                    priceContainer.after('<div class="rolino-plan-old-price"><p>' + formatPrice(originalPrice) + '</p></div>');
+                // Add or update discount badge
+                var discountBadge = priceContainer.find('.discount-badge');
+                if (discountBadge.length === 0) {
+                    priceContainer.append('<span class="discount-badge">' + discountData.discount_percent + '% تخفیف</span>');
                 } else {
-                    oldPriceContainer.find('p').text(formatPrice(originalPrice));
+                    discountBadge.text(discountData.discount_percent + '% تخفیف');
                 }
                 
-                // Update savings calculation
-                var savings = originalPrice - discountedPrice;
-                $(this).find('.rolino-plan-value p:last-child').text('شما صرفه‌جویی: ' + formatPrice(savings));
+                // Update value ratio to show savings
+                var valueContainer = $(this).find('.plan-value');
+                if (valueContainer.length > 0) {
+                    valueContainer.append('<div class="savings-info">صرفه‌جویی: ' + formatPrice(savings) + '</div>');
+                }
             }
         });
     }

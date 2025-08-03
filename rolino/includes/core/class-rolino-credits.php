@@ -192,17 +192,21 @@ class Rolino_Credits {
     public function get_user_credits($user_id) {
         global $wpdb;
         
-        $total = $wpdb->get_var(
+        // Get only active subscription credits
+        $active_credits = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT SUM(credit) FROM {$this->table_name} 
+                "SELECT credit FROM {$this->table_name} 
                  WHERE user_id = %d 
+                 AND plan_id > 0 
+                 AND start_time <= NOW() 
                  AND end_time > NOW() 
-                 AND credit > 0",
+                 ORDER BY end_time DESC 
+                 LIMIT 1",
                 $user_id
             )
         );
         
-        return intval($total);
+        return intval($active_credits);
     }
     
     /**
@@ -214,18 +218,22 @@ class Rolino_Credits {
     public function get_active_subscription($user_id) {
         global $wpdb;
         
-        return $wpdb->get_row(
+        $subscription = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$this->table_name} 
-                 WHERE user_id = %d 
-                 AND plan_id > 0 
-                 AND start_time <= NOW() 
-                 AND end_time > NOW() 
-                 ORDER BY end_time DESC 
+                "SELECT c.*, p.plan_name 
+                 FROM {$this->table_name} c
+                 LEFT JOIN {$wpdb->prefix}rolino_plans p ON c.plan_id = p.id
+                 WHERE c.user_id = %d 
+                 AND c.plan_id > 0 
+                 AND c.start_time <= NOW() 
+                 AND c.end_time > NOW() 
+                 ORDER BY c.end_time DESC 
                  LIMIT 1",
                 $user_id
             )
         );
+        
+        return $subscription;
     }
     
     /**
@@ -237,17 +245,21 @@ class Rolino_Credits {
     public function get_reserve_subscription($user_id) {
         global $wpdb;
         
-        return $wpdb->get_row(
+        $subscription = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$this->table_name} 
-                 WHERE user_id = %d 
-                 AND plan_id > 0 
-                 AND start_time > NOW() 
-                 ORDER BY start_time ASC 
+                "SELECT c.*, p.plan_name 
+                 FROM {$this->table_name} c
+                 LEFT JOIN {$wpdb->prefix}rolino_plans p ON c.plan_id = p.id
+                 WHERE c.user_id = %d 
+                 AND c.plan_id > 0 
+                 AND c.start_time > NOW() 
+                 ORDER BY c.start_time ASC 
                  LIMIT 1",
                 $user_id
             )
         );
+        
+        return $subscription;
     }
     
     /**
@@ -445,7 +457,7 @@ class Rolino_Credits {
      * @param int $user_id
      * @return int
      */
-    private function get_user_active_sessions($user_id) {
+    public function get_user_active_sessions($user_id) {
         // This would integrate with your session tracking system
         // For now, returning 0
         return apply_filters('rolino_user_active_sessions', 0, $user_id);
