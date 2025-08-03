@@ -113,14 +113,20 @@ $coupon_types = array(
                 <tr>
                     <th style="width: 200px;"><?php _e('نام طرح', 'rolino'); ?></th>
                     <th style="width: 150px;"><?php _e('درصد تخفیف', 'rolino'); ?></th>
-                    <th style="width: 150px;"><?php _e('مبلغ تخفیف (تومان)', 'rolino'); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!empty($all_plans)): ?>
                     <?php foreach ($all_plans as $plan): ?>
                         <?php 
-                        $plan_discount = isset($coupon_discounts[$plan->id]) ? $coupon_discounts[$plan->id] : array('percent' => 0, 'amount' => 0);
+                        $plan_discount = array('percent' => 0);
+                        if (isset($coupon_discounts[$plan->id])) {
+                            if (is_array($coupon_discounts[$plan->id])) {
+                                $plan_discount = $coupon_discounts[$plan->id];
+                            } else {
+                                $plan_discount = array('percent' => intval($coupon_discounts[$plan->id]));
+                            }
+                        }
                         ?>
                         <tr>
                             <td>
@@ -137,20 +143,11 @@ $coupon_types = array(
                                        step="0.1">
                                 <span>%</span>
                             </td>
-                            <td>
-                                <input type="number" 
-                                       name="plan_discounts[<?php echo $plan->id; ?>][amount]" 
-                                       value="<?php echo esc_attr($plan_discount['amount']); ?>" 
-                                       class="small-text" 
-                                       min="0" 
-                                       step="1000">
-                                <span>تومان</span>
-                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="3"><?php _e('هیچ طرح فعالی یافت نشد', 'rolino'); ?></td>
+                        <td colspan="2"><?php _e('هیچ طرح فعالی یافت نشد', 'rolino'); ?></td>
                     </tr>
                 <?php endif; ?>
             </tbody>

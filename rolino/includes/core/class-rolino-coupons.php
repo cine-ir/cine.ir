@@ -501,16 +501,18 @@ class Rolino_Coupons {
     public function add_plan_discounts($coupon_id, $plan_discounts) {
         global $wpdb;
         
-        foreach ($plan_discounts as $plan_id => $discount_percent) {
-            $wpdb->insert(
-                $this->discounts_table,
-                array(
-                    'coupon_id' => $coupon_id,
-                    'plan_id' => intval($plan_id),
-                    'discount_percent' => intval($discount_percent)
-                ),
-                array('%d', '%d', '%d')
-            );
+        foreach ($plan_discounts as $plan_id => $discount_data) {
+            if (isset($discount_data['percent']) && $discount_data['percent'] > 0) {
+                $wpdb->insert(
+                    $this->discounts_table,
+                    array(
+                        'coupon_id' => $coupon_id,
+                        'plan_id' => intval($plan_id),
+                        'discount_percent' => intval($discount_data['percent'])
+                    ),
+                    array('%d', '%d', '%d')
+                );
+            }
         }
         
         return true;
