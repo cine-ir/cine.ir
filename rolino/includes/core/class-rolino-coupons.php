@@ -44,15 +44,20 @@ class Rolino_Coupons {
             return false;
         }
         
+        $start_date = current_time('Y-m-d H:i:s');
+        $end_date = date('Y-m-d H:i:s', strtotime('+' . $data['duration_days'] . ' days'));
+        
         $result = $wpdb->insert(
             $this->table_name,
             array(
                 'code' => $data['code'],
                 'type' => $data['type'],
                 'duration_days' => $data['duration_days'],
+                'start_date' => $start_date,
+                'end_date' => $end_date,
                 'status' => $data['status']
             ),
-            array('%s', '%d', '%d', '%d')
+            array('%s', '%d', '%d', '%s', '%s', '%d')
         );
         
         if ($result !== false) {
@@ -100,16 +105,19 @@ class Rolino_Coupons {
             return false;
         }
         
+        $end_date = date('Y-m-d H:i:s', strtotime('+' . $data['duration_days'] . ' days'));
+        
         $result = $wpdb->update(
             $this->table_name,
             array(
                 'code' => $data['code'],
                 'type' => $data['type'],
                 'duration_days' => $data['duration_days'],
+                'end_date' => $end_date,
                 'status' => $data['status']
             ),
             array('id' => $coupon_id),
-            array('%s', '%d', '%d', '%d'),
+            array('%s', '%d', '%d', '%s', '%d'),
             array('%d')
         );
         

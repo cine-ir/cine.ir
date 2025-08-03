@@ -123,17 +123,19 @@ class Rolino_Plans {
         $data = $this->sanitize_plan_data($data);
         
         $validation_result = $this->validate_plan_data($data);
-        if ($validation_result['valid']) {
-            $result = $wpdb->insert(
-                $this->table_name,
-                $data,
-                array('%s', '%d', '%f', '%d', '%d', '%d')
-            );
-            
-            if ($result !== false) {
-                do_action('rolino_plan_created', $wpdb->insert_id, $data);
-                return $wpdb->insert_id;
-            }
+        if (!$validation_result['valid']) {
+            return false;
+        }
+        
+        $result = $wpdb->insert(
+            $this->table_name,
+            $data,
+            array('%s', '%d', '%f', '%d', '%d', '%d')
+        );
+        
+        if ($result !== false) {
+            do_action('rolino_plan_created', $wpdb->insert_id, $data);
+            return $wpdb->insert_id;
         }
         
         return false;
@@ -152,19 +154,21 @@ class Rolino_Plans {
         $data = $this->sanitize_plan_data($data);
         
         $validation_result = $this->validate_plan_data($data);
-        if ($validation_result['valid']) {
-            $result = $wpdb->update(
-                $this->table_name,
-                $data,
-                array('id' => $plan_id),
-                array('%s', '%d', '%f', '%d', '%d', '%d'),
-                array('%d')
-            );
-            
-            if ($result !== false) {
-                do_action('rolino_plan_updated', $plan_id, $data);
-                return true;
-            }
+        if (!$validation_result['valid']) {
+            return false;
+        }
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            $data,
+            array('id' => $plan_id),
+            array('%s', '%d', '%f', '%d', '%d', '%d'),
+            array('%d')
+        );
+        
+        if ($result !== false) {
+            do_action('rolino_plan_updated', $plan_id, $data);
+            return true;
         }
         
         return false;

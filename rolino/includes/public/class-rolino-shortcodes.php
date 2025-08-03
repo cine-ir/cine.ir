@@ -74,7 +74,7 @@ class Rolino_Shortcodes {
         if (!empty($grouped_plans)) {
             foreach ($grouped_plans as $group_name => &$group_plans) {
                 $group_plans = array_filter($group_plans, function($plan) {
-                    return $plan->status == 1;
+                    return isset($plan->status) && $plan->status == 1;
                 });
             }
             $grouped_plans = array_filter($grouped_plans, function($plans) {
@@ -84,7 +84,7 @@ class Rolino_Shortcodes {
         
         if (!empty($ungrouped_plans)) {
             $ungrouped_plans = array_filter($ungrouped_plans, function($plan) {
-                return $plan->status == 1;
+                return isset($plan->status) && $plan->status == 1;
             });
         }
         
@@ -344,6 +344,10 @@ class Rolino_Shortcodes {
         // Mark plans with best value ratio as recommended
         // This is a simple logic - you can enhance it
         if (!isset($plan->credits) || $plan->credits == 0) {
+            return false;
+        }
+        
+        if (!isset($plan->price) || $plan->price == 0) {
             return false;
         }
         

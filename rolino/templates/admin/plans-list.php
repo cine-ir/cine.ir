@@ -142,7 +142,13 @@ $sortable_columns = $plans_admin->get_sortable_columns();
                             </td>
                             
                             <td class="created-at column-created-at">
-                                <?php echo isset($plan->created_at) ? date_i18n('Y/m/d', strtotime($plan->created_at)) : '-'; ?>
+                                <?php 
+                                if (isset($plan->created_at) && !empty($plan->created_at)) {
+                                    echo date_i18n('Y/m/d', strtotime($plan->created_at));
+                                } else {
+                                    echo date_i18n('Y/m/d', current_time('timestamp'));
+                                }
+                                ?>
                             </td>
                             
                             <td class="actions column-actions">

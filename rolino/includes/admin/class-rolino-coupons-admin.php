@@ -190,7 +190,7 @@ class Rolino_Coupons_Admin {
         }
         
         // Check if code already exists (for new coupons or different coupon)
-        if ($this->get_coupons()->coupon_code_exists($coupon_data['code'], $coupon_id)) {
+        if ($coupon_id == 0 && $this->get_coupons()->coupon_code_exists($coupon_data['code'])) {
             wp_send_json_error(array('message' => __('این کد تخفیف قبلاً استفاده شده است', 'rolino')));
         }
         
