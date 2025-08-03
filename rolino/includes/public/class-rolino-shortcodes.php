@@ -110,6 +110,9 @@ class Rolino_Shortcodes {
         
 
         
+        // Calculate subscription status for template
+        $has_two_subscriptions = $active_subscription && $reserve_subscription;
+        
         // Pass shortcodes instance to template
         $shortcodes = $this;
         
@@ -305,6 +308,15 @@ class Rolino_Shortcodes {
         }
         
         $active_subscription = $credits_obj->get_active_subscription($user_id);
+        $reserve_subscription = $credits_obj->get_reserve_subscription($user_id);
+        
+        // Check if user already has 2 subscriptions (active + reserve)
+        if ($active_subscription && $reserve_subscription) {
+            return array(
+                'can_purchase' => false,
+                'reason' => __('شما حداکثر تعداد مجاز اشتراک (2) را دارید', 'rolino')
+            );
+        }
         
         // Check active sessions limit
         if ($active_subscription && $plan->active_sessions > 0) {

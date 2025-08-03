@@ -463,7 +463,7 @@ class Rolino_Plans {
      * AJAX handler for toggling plan group membership
      */
     public function ajax_toggle_plan_group() {
-        check_ajax_referer('rolino_ajax_nonce', 'nonce');
+        check_ajax_referer('rolino_plan_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_die(__('شما اجازه انجام این عملیات را ندارید', 'rolino'));

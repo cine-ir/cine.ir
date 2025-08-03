@@ -9,6 +9,29 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Helper function to render plan action button
+function render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription) {
+    $has_two_subscriptions = $active_subscription && $reserve_subscription;
+    
+    if ($has_two_subscriptions) {
+        echo '<button type="button" class="rolino-btn you-have-2-sub" disabled>';
+        _e('خرید طرح', 'rolino');
+        echo '</button>';
+    } elseif ($purchase_check['can_purchase']) {
+        echo '<button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" data-plan-id="' . ($plan->id ?? 0) . '">';
+        if ($purchase_check['will_be_reserve']) {
+            _e('رزرو طرح', 'rolino');
+        } else {
+            _e('خرید طرح', 'rolino');
+        }
+        echo '</button>';
+    } else {
+        echo '<div class="rolino-message rolino-message-error">';
+        echo esc_html($purchase_check['reason']);
+        echo '</div>';
+    }
+}
+
 // Enqueue required scripts and styles
 wp_enqueue_script('rolino-frontend-js', ROLINO_PLUGIN_URL . 'assets/js/menus.js', array('jquery'), ROLINO_VERSION, true);
 wp_enqueue_style('rolino-frontend-css', ROLINO_PLUGIN_URL . 'assets/css/menus.css', array(), ROLINO_VERSION);
@@ -26,32 +49,32 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
 ?>
 
 <div class="rolino-plans-container">
-    <!-- Debug: Template is loading -->
-    <div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">
-        <p><strong>Debug:</strong> Template is loading. Plans count: <?php echo count($plans ?? array()); ?>, Grouped plans count: <?php echo count($grouped_plans ?? array()); ?>, Ungrouped plans count: <?php echo count($ungrouped_plans ?? array()); ?></p>
-    </div>
     
     <?php if (!empty($user_credits)): ?>
         <div class="rolino-user-info">
-            <div class="rolino-credits-info">
-                <span class="credits-label"><?php _e('اعتبار فعلی:', 'rolino'); ?></span>
-                <span class="credits-value"><?php echo number_format($user_credits); ?></span>
+            <div class="rolino-user-details">
+                <div class="rolino-current-subscription">
+                    <span class="label"><?php _e('نام اشتراک فعلی:', 'rolino'); ?></span>
+                    <span class="value"><?php echo $active_subscription ? esc_html($active_subscription->plan_name ?? '') : __('هیچ اشتراک فعالی ندارید', 'rolino'); ?></span>
+                </div>
+                
+                <div class="rolino-current-time">
+                    <span class="label"><?php _e('زمان اشتراک فعلی:', 'rolino'); ?></span>
+                    <span class="value"><?php echo $shortcodes->get_user_remaining_time_text($user_id); ?></span>
+                </div>
+                
+                <div class="rolino-current-credits">
+                    <span class="label"><?php _e('اعتبار فعلی:', 'rolino'); ?></span>
+                    <span class="value"><?php echo number_format($user_credits); ?></span>
+                </div>
+                
+                <?php if ($reserve_subscription): ?>
+                    <div class="rolino-reserve-subscription">
+                        <span class="label"><?php _e('نام اشتراک رزرو:', 'rolino'); ?></span>
+                        <span class="value"><?php echo esc_html($reserve_subscription->plan_name ?? ''); ?></span>
+                    </div>
+                <?php endif; ?>
             </div>
-            
-            <?php if ($active_subscription): ?>
-                <div class="rolino-subscription-info">
-                    <span class="subscription-label"><?php _e('اشتراک فعال:', 'rolino'); ?></span>
-                    <span class="subscription-value"><?php echo esc_html($active_subscription->plan_name ?? ''); ?></span>
-                    <span class="remaining-time"><?php echo $shortcodes->get_user_remaining_time_text($user_id); ?></span>
-                </div>
-            <?php endif; ?>
-            
-            <?php if ($reserve_subscription): ?>
-                <div class="rolino-reserve-info">
-                    <span class="reserve-label"><?php _e('اشتراک رزرو:', 'rolino'); ?></span>
-                    <span class="reserve-value"><?php echo esc_html($reserve_subscription->plan_name ?? ''); ?></span>
-                </div>
-            <?php endif; ?>
         </div>
     <?php endif; ?>
     
@@ -66,6 +89,10 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
     
     <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
         <?php if ($atts['show_single_buy'] === 'yes' && $single_buy_active): ?>
+            <?php 
+            $can_buy_single = !$active_subscription;
+            $has_two_subscriptions = $active_subscription && $reserve_subscription;
+            ?>
             <div class="rolino-plan-item single-buy-plan" data-plan-id="0" data-original-price="<?php echo $single_buy_settings['price']; ?>">
                 <div class="plan-header">
                     <h3 class="plan-name"><?php _e('خرید تکی', 'rolino'); ?></h3>
@@ -89,10 +116,20 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 </div>
                 
                 <div class="plan-actions">
-                    <button type="button" class="rolino-buy-credit rolino-btn rolino-btn-primary" 
-                            data-credit-amount="<?php echo $single_buy_settings['credits']; ?>">
-                        <?php _e('خرید تکی', 'rolino'); ?>
-                    </button>
+                    <?php if ($has_two_subscriptions): ?>
+                        <button type="button" class="rolino-btn you-have-2-sub" disabled>
+                            <?php _e('خرید طرح', 'rolino'); ?>
+                        </button>
+                    <?php elseif (!$can_buy_single): ?>
+                        <button type="button" class="rolino-btn single-buy" disabled>
+                            <?php _e('خرید تکی', 'rolino'); ?>
+                        </button>
+                    <?php else: ?>
+                        <button type="button" class="rolino-buy-credit rolino-btn rolino-btn-primary" 
+                                data-credit-amount="<?php echo $single_buy_settings['credits']; ?>">
+                            <?php _e('خرید تکی', 'rolino'); ?>
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
@@ -149,20 +186,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     </div>
                     
                     <div class="plan-actions">
-                        <?php if ($purchase_check['can_purchase']): ?>
-                            <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                    data-plan-id="<?php echo $plan->id ?? 0; ?>">
-                                <?php if ($purchase_check['will_be_reserve']): ?>
-                                    <?php _e('رزرو طرح', 'rolino'); ?>
-                                <?php else: ?>
-                                    <?php _e('خرید طرح', 'rolino'); ?>
-                                <?php endif; ?>
-                            </button>
-                        <?php else: ?>
-                            <div class="rolino-message rolino-message-error">
-                                <?php echo esc_html($purchase_check['reason']); ?>
-                            </div>
-                        <?php endif; ?>
+                        <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -225,20 +249,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                                 </div>
                                 
                                 <div class="plan-actions">
-                                    <?php if ($purchase_check['can_purchase']): ?>
-                                        <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                                data-plan-id="<?php echo $plan->id ?? 0; ?>">
-                                            <?php if ($purchase_check['will_be_reserve']): ?>
-                                                <?php _e('رزرو طرح', 'rolino'); ?>
-                                            <?php else: ?>
-                                                <?php _e('خرید طرح', 'rolino'); ?>
-                                            <?php endif; ?>
-                                        </button>
-                                    <?php else: ?>
-                                        <div class="rolino-message rolino-message-error">
-                                            <?php echo esc_html($purchase_check['reason']); ?>
-                                        </div>
-                                    <?php endif; ?>
+                                    <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -299,20 +310,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     </div>
                     
                     <div class="plan-actions">
-                        <?php if ($purchase_check['can_purchase']): ?>
-                            <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                    data-plan-id="<?php echo $plan->id ?? 0; ?>">
-                                <?php if ($purchase_check['will_be_reserve']): ?>
-                                    <?php _e('رزرو طرح', 'rolino'); ?>
-                                <?php else: ?>
-                                    <?php _e('خرید طرح', 'rolino'); ?>
-                                <?php endif; ?>
-                            </button>
-                        <?php else: ?>
-                            <div class="rolino-message rolino-message-error">
-                                <?php echo esc_html($purchase_check['reason']); ?>
-                            </div>
-                        <?php endif; ?>
+                        <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -327,7 +325,6 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
     
     <?php if (!empty($grouped_plans)): ?>
         <div class="rolino-grouped-plans">
-            <h3><?php _e('طرح‌های گروه‌بندی شده', 'rolino'); ?></h3>
             <?php foreach ($grouped_plans as $group_name => $group_plans): ?>
                 <div class="rolino-plan-group">
                     <h4><?php echo esc_html($group_name); ?></h4>
@@ -383,20 +380,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                                 </div>
                                 
                                 <div class="plan-actions">
-                                    <?php if ($purchase_check['can_purchase']): ?>
-                                        <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                                data-plan-id="<?php echo $plan->id ?? 0; ?>">
-                                            <?php if ($purchase_check['will_be_reserve']): ?>
-                                                <?php _e('رزرو طرح', 'rolino'); ?>
-                                            <?php else: ?>
-                                                <?php _e('خرید طرح', 'rolino'); ?>
-                                            <?php endif; ?>
-                                        </button>
-                                    <?php else: ?>
-                                        <div class="rolino-message rolino-message-error">
-                                            <?php echo esc_html($purchase_check['reason']); ?>
-                                        </div>
-                                    <?php endif; ?>
+                                    <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -448,33 +432,20 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                         
                         <div class="plan-price">
                             <?php if ($discount_info['has_discount']): ?>
-                                <span class="price-old"><?php echo $this->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
-                                <span class="price-now"><?php echo $this->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                <span class="price-old"><?php echo $shortcodes->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                                 <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
                             <?php else: ?>
-                                <span class="price-now"><?php echo $this->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                <span class="price-now"><?php echo $shortcodes->format_price($plan->price ?? 0); ?> <?php _e('تومان', 'rolino'); ?></span>
                             <?php endif; ?>
                         </div>
                         
                         <div class="plan-value">
-                            <span class="value-ratio"><?php echo $this->format_price($this->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
+                            <span class="value-ratio"><?php echo $shortcodes->format_price($shortcodes->calculate_value_ratio($plan)); ?> <?php _e('تومان به ازای هر اعتبار', 'rolino'); ?></span>
                         </div>
                         
                         <div class="plan-actions">
-                            <?php if ($purchase_check['can_purchase']): ?>
-                                <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                        data-plan-id="<?php echo $plan->id; ?>">
-                                    <?php if ($purchase_check['will_be_reserve']): ?>
-                                        <?php _e('رزرو طرح', 'rolino'); ?>
-                                    <?php else: ?>
-                                        <?php _e('خرید طرح', 'rolino'); ?>
-                                    <?php endif; ?>
-                                </button>
-                            <?php else: ?>
-                                <div class="rolino-message rolino-message-error">
-                                    <?php echo esc_html($purchase_check['reason']); ?>
-                                </div>
-                            <?php endif; ?>
+                            <?php render_plan_action_button($purchase_check, $plan, $active_subscription, $reserve_subscription); ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
