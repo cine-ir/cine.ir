@@ -59,6 +59,13 @@ class Rolino_Shortcodes {
             $plans = $plans_obj->get_plans($args);
         }
         
+        // Ensure plans are objects and have required properties
+        if (!empty($plans)) {
+            $plans = array_filter($plans, function($plan) {
+                return is_object($plan) && isset($plan->status) && $plan->status == 1;
+            });
+        }
+        
         // Get plan groups for display (only active plans)
         $grouped_plans = $plans_obj->get_grouped_plans();
         $ungrouped_plans = $plans_obj->get_ungrouped_plans();
@@ -252,7 +259,7 @@ class Rolino_Shortcodes {
         }
         
         $discount_percent = $validation_result['discount_percent'];
-        $original_price = floatval($plan->price);
+        $original_price = floatval($plan->price ?? 0);
         $discounted_price = $original_price * (1 - $discount_percent / 100);
         
         return array(

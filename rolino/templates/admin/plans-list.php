@@ -142,7 +142,7 @@ $sortable_columns = $plans_admin->get_sortable_columns();
                             </td>
                             
                             <td class="created-at column-created-at">
-                                <?php echo date_i18n('Y/m/d', strtotime($plan->created_at)); ?>
+                                <?php echo isset($plan->created_at) ? date_i18n('Y/m/d', strtotime($plan->created_at)) : '-'; ?>
                             </td>
                             
                             <td class="actions column-actions">
@@ -201,6 +201,10 @@ jQuery(document).ready(function($) {
                 status: status,
                 nonce: rolinoAdmin.nonce
             },
+            beforeSend: function() {
+                // Show loading state
+                $row.find('.toggle-plan-status').prop('disabled', true);
+            },
             success: function(response) {
                 if (response.success) {
                     // Update status badge
@@ -219,7 +223,11 @@ jQuery(document).ready(function($) {
                 // Revert toggle on error
                 $(this).prop('checked', !status);
                 alert('<?php echo esc_js(__('خطایی رخ داد', 'rolino')); ?>');
-            }.bind(this)
+            }.bind(this),
+            complete: function() {
+                // Re-enable toggle
+                $row.find('.toggle-plan-status').prop('disabled', false);
+            }
         });
     });
     

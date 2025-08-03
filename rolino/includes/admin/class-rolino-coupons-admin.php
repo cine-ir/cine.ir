@@ -177,9 +177,7 @@ class Rolino_Coupons_Admin {
         $coupon_data = array(
             'code' => sanitize_text_field($_POST['code'] ?? ''),
             'type' => intval($_POST['type'] ?? 1),
-            'start_date' => sanitize_text_field($_POST['start_date'] ?? ''),
-            'end_date' => sanitize_text_field($_POST['end_date'] ?? ''),
-            'usage_limit' => intval($_POST['usage_limit'] ?? 0),
+            'duration_days' => intval($_POST['duration_days'] ?? 30),
             'status' => intval($_POST['status'] ?? 1)
         );
         

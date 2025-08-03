@@ -168,6 +168,7 @@ $coupon_types = array(
 </div>
 
 <script>
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
 jQuery(document).ready(function($) {
     // Generate coupon code
     $('#generate-code').on('click', function() {
@@ -189,7 +190,7 @@ jQuery(document).ready(function($) {
         $('#save-coupon').prop('disabled', true).text('<?php _e('در حال ذخیره...', 'rolino'); ?>');
         
         $.ajax({
-            url: rolino_ajax.ajax_url,
+            url: ajaxurl,
             type: 'POST',
             data: formData,
             success: function(response) {

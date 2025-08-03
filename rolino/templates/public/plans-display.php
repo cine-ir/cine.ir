@@ -36,7 +36,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <?php if ($active_subscription): ?>
                 <div class="rolino-subscription-info">
                     <span class="subscription-label"><?php _e('اشتراک فعال:', 'rolino'); ?></span>
-                    <span class="subscription-value"><?php echo esc_html($active_subscription->plan_name); ?></span>
+                    <span class="subscription-value"><?php echo esc_html($active_subscription->plan_name ?? ''); ?></span>
                     <span class="remaining-time"><?php echo $shortcodes->get_user_remaining_time_text($user_id); ?></span>
                 </div>
             <?php endif; ?>
@@ -44,7 +44,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <?php if ($reserve_subscription): ?>
                 <div class="rolino-reserve-info">
                     <span class="reserve-label"><?php _e('اشتراک رزرو:', 'rolino'); ?></span>
-                    <span class="reserve-value"><?php echo esc_html($reserve_subscription->plan_name); ?></span>
+                    <span class="reserve-value"><?php echo esc_html($reserve_subscription->plan_name ?? ''); ?></span>
                 </div>
             <?php endif; ?>
         </div>
@@ -104,27 +104,27 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 }
                 ?>
                 
-                <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
+                <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id ?? 0; ?>" data-original-price="<?php echo $plan->price ?? 0; ?>">
                     <div class="plan-header">
-                        <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
+                        <h3 class="plan-name"><?php echo esc_html($plan->plan_name ?? ''); ?></h3>
                         <?php echo $shortcodes->get_plan_badge($plan); ?>
                     </div>
                     
                     <div class="plan-details">
                         <div class="plan-credits">
                             <span class="label"><?php _e('اعتبار:', 'rolino'); ?></span>
-                            <span class="value"><?php echo number_format($plan->credits); ?></span>
+                            <span class="value"><?php echo number_format($plan->credits ?? 0); ?></span>
                         </div>
                         
                         <div class="plan-duration">
                             <span class="label"><?php _e('مدت:', 'rolino'); ?></span>
-                            <span class="value"><?php echo number_format($plan->duration); ?> <?php _e('روز', 'rolino'); ?></span>
+                            <span class="value"><?php echo number_format($plan->duration ?? 0); ?> <?php _e('روز', 'rolino'); ?></span>
                         </div>
                         
-                        <?php if ($plan->active_sessions > 1): ?>
+                        <?php if (($plan->active_sessions ?? 0) > 1): ?>
                             <div class="plan-sessions">
                                 <span class="label"><?php _e('جلسات همزمان:', 'rolino'); ?></span>
-                                <span class="value"><?php echo number_format($plan->active_sessions); ?></span>
+                                <span class="value"><?php echo number_format($plan->active_sessions ?? 0); ?></span>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -135,7 +135,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                             <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                             <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
                         <?php else: ?>
-                            <span class="price-now"><?php echo $shortcodes->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
+                            <span class="price-now"><?php echo $shortcodes->format_price($plan->price ?? 0); ?> <?php _e('تومان', 'rolino'); ?></span>
                         <?php endif; ?>
                     </div>
                     
@@ -146,7 +146,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     <div class="plan-actions">
                         <?php if ($purchase_check['can_purchase']): ?>
                             <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                    data-plan-id="<?php echo $plan->id; ?>">
+                                    data-plan-id="<?php echo $plan->id ?? 0; ?>">
                                 <?php if ($purchase_check['will_be_reserve']): ?>
                                     <?php _e('رزرو طرح', 'rolino'); ?>
                                 <?php else: ?>
@@ -186,38 +186,38 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                             }
                             ?>
                             
-                            <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
+                            <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id ?? 0; ?>" data-original-price="<?php echo $plan->price ?? 0; ?>">
                                 <div class="plan-header">
-                                    <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
+                                    <h3 class="plan-name"><?php echo esc_html($plan->plan_name ?? ''); ?></h3>
                                     <?php echo $shortcodes->get_plan_badge($plan); ?>
                                 </div>
                                 
                                 <div class="plan-details">
                                     <div class="plan-credits">
                                         <span class="label"><?php _e('اعتبار:', 'rolino'); ?></span>
-                                        <span class="value"><?php echo number_format($plan->credits); ?></span>
+                                        <span class="value"><?php echo number_format($plan->credits ?? 0); ?></span>
                                     </div>
                                     
                                     <div class="plan-duration">
                                         <span class="label"><?php _e('مدت:', 'rolino'); ?></span>
-                                        <span class="value"><?php echo number_format($plan->duration); ?> <?php _e('روز', 'rolino'); ?></span>
+                                        <span class="value"><?php echo number_format($plan->duration ?? 0); ?> <?php _e('روز', 'rolino'); ?></span>
                                     </div>
                                     
-                                    <?php if ($plan->active_sessions > 1): ?>
+                                    <?php if (($plan->active_sessions ?? 0) > 1): ?>
                                         <div class="plan-sessions">
                                             <span class="label"><?php _e('جلسات همزمان:', 'rolino'); ?></span>
-                                            <span class="value"><?php echo number_format($plan->active_sessions); ?></span>
+                                            <span class="value"><?php echo number_format($plan->active_sessions ?? 0); ?></span>
                                         </div>
                                     <?php endif; ?>
                                 </div>
                                 
                                 <div class="plan-price">
                                     <?php if ($discount_info['has_discount']): ?>
-                                        <span class="price-old"><?php echo $this->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                        <span class="price-old"><?php echo $shortcodes->format_price($discount_info['original_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                                         <span class="price-now"><?php echo $shortcodes->format_price($discount_info['discounted_price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                                         <span class="discount-badge"><?php echo $discount_info['discount_percent']; ?>% <?php _e('تخفیف', 'rolino'); ?></span>
                                     <?php else: ?>
-                                        <span class="price-now"><?php echo $shortcodes->format_price($plan->price); ?> <?php _e('تومان', 'rolino'); ?></span>
+                                        <span class="price-now"><?php echo $shortcodes->format_price($plan->price ?? 0); ?> <?php _e('تومان', 'rolino'); ?></span>
                                     <?php endif; ?>
                                 </div>
                                 
@@ -228,7 +228,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                                 <div class="plan-actions">
                                     <?php if ($purchase_check['can_purchase']): ?>
                                         <button type="button" class="rolino-buy-plan rolino-btn rolino-btn-primary" 
-                                                data-plan-id="<?php echo $plan->id; ?>">
+                                                data-plan-id="<?php echo $plan->id ?? 0; ?>">
                                             <?php if ($purchase_check['will_be_reserve']): ?>
                                                 <?php _e('رزرو طرح', 'rolino'); ?>
                                             <?php else: ?>
@@ -264,29 +264,29 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     }
                     ?>
                     
-                    <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
+                    <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id ?? 0; ?>" data-original-price="<?php echo $plan->price ?? 0; ?>">
                         <div class="plan-header">
-                            <h3 class="plan-name"><?php echo esc_html($plan->plan_name); ?></h3>
+                            <h3 class="plan-name"><?php echo esc_html($plan->plan_name ?? ''); ?></h3>
                             <?php echo $shortcodes->get_plan_badge($plan); ?>
                         </div>
                         
                         <div class="plan-details">
-                            <div class="plan-credits">
-                                <span class="label"><?php _e('اعتبار:', 'rolino'); ?></span>
-                                <span class="value"><?php echo number_format($plan->credits); ?></span>
+                                                    <div class="plan-credits">
+                            <span class="label"><?php _e('اعتبار:', 'rolino'); ?></span>
+                            <span class="value"><?php echo number_format($plan->credits ?? 0); ?></span>
+                        </div>
+                        
+                        <div class="plan-duration">
+                            <span class="label"><?php _e('مدت:', 'rolino'); ?></span>
+                            <span class="value"><?php echo number_format($plan->duration ?? 0); ?> <?php _e('روز', 'rolino'); ?></span>
+                        </div>
+                        
+                        <?php if (($plan->active_sessions ?? 0) > 1): ?>
+                            <div class="plan-sessions">
+                                <span class="label"><?php _e('جلسات همزمان:', 'rolino'); ?></span>
+                                <span class="value"><?php echo number_format($plan->active_sessions ?? 0); ?></span>
                             </div>
-                            
-                            <div class="plan-duration">
-                                <span class="label"><?php _e('مدت:', 'rolino'); ?></span>
-                                <span class="value"><?php echo number_format($plan->duration); ?> <?php _e('روز', 'rolino'); ?></span>
-                            </div>
-                            
-                            <?php if ($plan->active_sessions > 1): ?>
-                                <div class="plan-sessions">
-                                    <span class="label"><?php _e('جلسات همزمان:', 'rolino'); ?></span>
-                                    <span class="value"><?php echo number_format($plan->active_sessions); ?></span>
-                                </div>
-                            <?php endif; ?>
+                        <?php endif; ?>
                         </div>
                         
                         <div class="plan-price">
