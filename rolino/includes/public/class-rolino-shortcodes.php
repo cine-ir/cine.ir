@@ -53,15 +53,33 @@ class Rolino_Shortcodes {
             $plans = $plans_obj->get_plans_by_group($atts['group']);
         } else {
             $args = array(
-                'status' => 1,
+                'status' => 1, // Only show active plans in frontend
                 'limit' => intval($atts['limit'])
             );
             $plans = $plans_obj->get_plans($args);
         }
         
-        // Get plan groups for display
+        // Get plan groups for display (only active plans)
         $grouped_plans = $plans_obj->get_grouped_plans();
         $ungrouped_plans = $plans_obj->get_ungrouped_plans();
+        
+        // Filter out inactive plans from grouped and ungrouped plans
+        if (!empty($grouped_plans)) {
+            foreach ($grouped_plans as $group_name => &$group_plans) {
+                $group_plans = array_filter($group_plans, function($plan) {
+                    return $plan->status == 1;
+                });
+            }
+            $grouped_plans = array_filter($grouped_plans, function($plans) {
+                return !empty($plans);
+            });
+        }
+        
+        if (!empty($ungrouped_plans)) {
+            $ungrouped_plans = array_filter($ungrouped_plans, function($plan) {
+                return $plan->status == 1;
+            });
+        }
         
         // Get single buy settings
         $single_buy_active = get_option('rolino_single_buy_active', 0);
@@ -269,12 +287,16 @@ class Rolino_Shortcodes {
         
         // Check active sessions limit
         if ($active_subscription && $plan->active_sessions > 0) {
-            $current_sessions = $credits_obj->get_user_active_sessions($user_id);
-            if ($current_sessions >= $plan->active_sessions) {
-                return array(
-                    'can_purchase' => false,
-                    'reason' => sprintf(__('شما به حد مجاز جلسات همزمان (%d) رسیده‌اید', 'rolino'), $plan->active_sessions)
-                );
+            try {
+                $current_sessions = $credits_obj->get_user_active_sessions($user_id);
+                if ($current_sessions >= $plan->active_sessions) {
+                    return array(
+                        'can_purchase' => false,
+                        'reason' => sprintf(__('شما به حد مجاز جلسات همزمان (%d) رسیده‌اید', 'rolino'), $plan->active_sessions)
+                    );
+                }
+            } catch (Exception $e) {
+                // If there's an error getting sessions, allow purchase
             }
         }
         

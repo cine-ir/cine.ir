@@ -445,7 +445,7 @@ class Rolino_Credits {
      * @param int $user_id
      * @return int
      */
-    private function get_user_active_sessions($user_id) {
+    public function get_user_active_sessions($user_id) {
         // This would integrate with your session tracking system
         // For now, returning 0
         return apply_filters('rolino_user_active_sessions', 0, $user_id);

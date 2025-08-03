@@ -183,6 +183,7 @@ $sortable_columns = $plans_admin->get_sortable_columns();
 var rolinoAdmin = {
     nonce: '<?php echo wp_create_nonce('rolino_admin_nonce'); ?>'
 };
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
 
 jQuery(document).ready(function($) {
     // Toggle plan status

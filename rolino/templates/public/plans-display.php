@@ -64,7 +64,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <div class="rolino-plan-item single-buy-plan" data-plan-id="0" data-original-price="<?php echo $single_buy_settings['price']; ?>">
                 <div class="plan-header">
                     <h3 class="plan-name"><?php _e('خرید تکی', 'rolino'); ?></h3>
-                    <?php echo $this->get_plan_badge((object)array('credits' => $single_buy_settings['credits'], 'duration' => $single_buy_settings['duration'])); ?>
+                    <?php echo $shortcodes->get_plan_badge((object)array('credits' => $single_buy_settings['credits'], 'duration' => $single_buy_settings['duration'])); ?>
                 </div>
                 
                 <div class="plan-details">
@@ -80,7 +80,7 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                 </div>
                 
                 <div class="plan-price">
-                    <span class="price-now"><?php echo $this->format_price($single_buy_settings['price']); ?> <?php _e('تومان', 'rolino'); ?></span>
+                    <span class="price-now"><?php echo $shortcodes->format_price($single_buy_settings['price']); ?> <?php _e('تومان', 'rolino'); ?></span>
                 </div>
                 
                 <div class="plan-actions">
@@ -95,8 +95,13 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
         <?php if (!empty($plans)): ?>
             <?php foreach ($plans as $plan): ?>
                 <?php 
-                $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
-                $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                try {
+                    $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                    $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                } catch (Exception $e) {
+                    $purchase_check = array('can_purchase' => false, 'reason' => 'خطا در بررسی طرح');
+                    $discount_info = array('has_discount' => false);
+                }
                 ?>
                 
                 <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
@@ -172,8 +177,13 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
                     <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
                         <?php foreach ($group_plans as $plan): ?>
                             <?php 
-                            $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
-                            $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                            try {
+                                $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                                $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                            } catch (Exception $e) {
+                                $purchase_check = array('can_purchase' => false, 'reason' => 'خطا در بررسی طرح');
+                                $discount_info = array('has_discount' => false);
+                            }
                             ?>
                             
                             <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">
@@ -245,8 +255,13 @@ wp_localize_script('rolino-frontend-js', 'rolino_ajax', array(
             <div class="rolino-plans-grid" style="grid-template-columns: repeat(<?php echo intval($atts['columns']); ?>, 1fr);">
                 <?php foreach ($ungrouped_plans as $plan): ?>
                     <?php 
-                    $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
-                    $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                    try {
+                        $purchase_check = $shortcodes->can_user_purchase_plan($plan->id, $user_id);
+                        $discount_info = $shortcodes->get_plan_discount_info($plan->id, isset($_GET['coupon_code']) ? $_GET['coupon_code'] : '');
+                    } catch (Exception $e) {
+                        $purchase_check = array('can_purchase' => false, 'reason' => 'خطا در بررسی طرح');
+                        $discount_info = array('has_discount' => false);
+                    }
                     ?>
                     
                     <div class="rolino-plan-item" data-plan-id="<?php echo $plan->id; ?>" data-original-price="<?php echo $plan->price; ?>">

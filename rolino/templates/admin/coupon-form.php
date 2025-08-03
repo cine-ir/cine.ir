@@ -17,9 +17,6 @@ $defaults = array(
     'code' => '',
     'type' => 1,
     'duration_days' => 30,
-    'start_date' => '',
-    'end_date' => '',
-    'usage_limit' => 0,
     'status' => 1
 );
 
@@ -89,48 +86,9 @@ $coupon_types = array(
                 </td>
             </tr>
             
-            <tr>
-                <th scope="row">
-                    <label for="start_date"><?php _e('تاریخ شروع', 'rolino'); ?></label>
-                </th>
-                <td>
-                    <input type="date" 
-                           id="start_date" 
-                           name="start_date" 
-                           value="<?php echo esc_attr($coupon_data['start_date']); ?>" 
-                           class="regular-text">
-                    <p class="description"><?php _e('تاریخ شروع اعتبار کد تخفیف', 'rolino'); ?></p>
-                </td>
-            </tr>
+
             
-            <tr>
-                <th scope="row">
-                    <label for="end_date"><?php _e('تاریخ پایان', 'rolino'); ?></label>
-                </th>
-                <td>
-                    <input type="date" 
-                           id="end_date" 
-                           name="end_date" 
-                           value="<?php echo esc_attr($coupon_data['end_date']); ?>" 
-                           class="regular-text">
-                    <p class="description"><?php _e('تاریخ پایان اعتبار کد تخفیف', 'rolino'); ?></p>
-                </td>
-            </tr>
-            
-            <tr>
-                <th scope="row">
-                    <label for="usage_limit"><?php _e('محدودیت استفاده', 'rolino'); ?></label>
-                </th>
-                <td>
-                    <input type="number" 
-                           id="usage_limit" 
-                           name="usage_limit" 
-                           value="<?php echo esc_attr($coupon_data['usage_limit']); ?>" 
-                           class="small-text" 
-                           min="0">
-                    <p class="description"><?php _e('تعداد دفعات مجاز استفاده (0 = نامحدود)', 'rolino'); ?></p>
-                </td>
-            </tr>
+
             
             <tr>
                 <th scope="row">

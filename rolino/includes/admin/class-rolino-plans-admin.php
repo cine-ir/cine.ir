@@ -164,15 +164,19 @@ class Rolino_Plans_Admin {
             wp_send_json_error(array('message' => __('شناسه طرح نامعتبر است', 'rolino')));
         }
         
-        $result = $this->get_plans()->update_plan($plan_id, array('status' => $status));
-        
-        if ($result) {
-            wp_send_json_success(array(
-                'message' => $status ? __('طرح فعال شد', 'rolino') : __('طرح غیرفعال شد', 'rolino'),
-                'status' => $status
-            ));
-        } else {
-            wp_send_json_error(array('message' => __('خطا در به‌روزرسانی وضعیت', 'rolino')));
+        try {
+            $result = $this->get_plans()->update_plan($plan_id, array('status' => $status));
+            
+            if ($result) {
+                wp_send_json_success(array(
+                    'message' => $status ? __('طرح فعال شد', 'rolino') : __('طرح غیرفعال شد', 'rolino'),
+                    'status' => $status
+                ));
+            } else {
+                wp_send_json_error(array('message' => __('خطا در به‌روزرسانی وضعیت', 'rolino')));
+            }
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => $e->getMessage()));
         }
     }
     
