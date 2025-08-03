@@ -217,7 +217,9 @@ class Rolino {
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$plans_table'") == $plans_table;
         
         if ($table_exists) {
-            return; // Tables already exist
+            // Update existing tables if needed
+            $this->update_existing_tables();
+            return;
         }
         
         $charset_collate = $wpdb->get_charset_collate();
@@ -280,6 +282,8 @@ class Rolino {
             code VARCHAR(8) NOT NULL UNIQUE COMMENT '4-8 characters',
             type TINYINT NOT NULL COMMENT '1=global, 2=public, 3=exclusive',
             duration_days INT NOT NULL COMMENT 'Duration in days',
+            start_date DATETIME NOT NULL,
+            end_date DATETIME NOT NULL,
             status TINYINT NOT NULL DEFAULT 1 COMMENT '0=inactive, 1=active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) $charset_collate;";
@@ -341,11 +345,36 @@ class Rolino {
             dbDelta($table);
         }
         
+        // Update existing tables if needed
+        $this->update_existing_tables();
+        
         // Insert default SMS scenarios
         $this->insert_default_sms_scenarios();
         
         // Update database version
         update_option('rolino_db_version', ROLINO_VERSION);
+    }
+    
+    private function update_existing_tables() {
+        global $wpdb;
+        
+        // Update rolino_coupons table
+        $coupons_table = $wpdb->prefix . 'rolino_coupons';
+        
+        // Check if start_date column exists
+        $start_date_exists = $wpdb->get_var("SHOW COLUMNS FROM $coupons_table LIKE 'start_date'");
+        if (!$start_date_exists) {
+            $wpdb->query("ALTER TABLE $coupons_table ADD COLUMN start_date DATETIME NOT NULL AFTER duration_days");
+        }
+        
+        // Check if end_date column exists
+        $end_date_exists = $wpdb->get_var("SHOW COLUMNS FROM $coupons_table LIKE 'end_date'");
+        if (!$end_date_exists) {
+            $wpdb->query("ALTER TABLE $coupons_table ADD COLUMN end_date DATETIME NOT NULL AFTER start_date");
+        }
+        
+        // Update existing coupons with default dates
+        $wpdb->query("UPDATE $coupons_table SET start_date = created_at, end_date = DATE_ADD(created_at, INTERVAL duration_days DAY) WHERE start_date = '0000-00-00 00:00:00' OR end_date = '0000-00-00 00:00:00'");
     }
     
     private function insert_default_sms_scenarios() {

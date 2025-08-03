@@ -151,7 +151,7 @@ class Rolino_Plans_Admin {
      * AJAX toggle plan status
      */
     public function ajax_toggle_plan_status() {
-        check_ajax_referer('rolino_admin_nonce', 'nonce');
+        check_ajax_referer('rolino_plan_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => __('دسترسی ندارید', 'rolino')));
