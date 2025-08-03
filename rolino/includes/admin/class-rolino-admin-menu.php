@@ -335,13 +335,15 @@ class Rolino_Admin_Menu {
     private function handle_settings_save() {
         if (isset($_POST['save_settings']) && wp_verify_nonce($_POST['_wpnonce'], 'rolino_settings')) {
             // Single buy settings
+            $single_buy_active = isset($_POST['single_buy_active']) ? 1 : 0;
             update_option('rolino_single_buy_duration', intval($_POST['single_buy_duration'] ?? 30));
             update_option('rolino_single_buy_credits', intval($_POST['single_buy_credits'] ?? 5));
             update_option('rolino_single_buy_price', floatval($_POST['single_buy_price'] ?? 10000));
-            update_option('rolino_single_buy_active', intval($_POST['single_buy_active'] ?? 0));
+            update_option('rolino_single_buy_active', $single_buy_active);
             
             // SMS settings
-            update_option('rolino_sms_enabled', intval($_POST['sms_enabled'] ?? 0));
+            $sms_enabled = isset($_POST['sms_enabled']) ? 1 : 0;
+            update_option('rolino_sms_enabled', $sms_enabled);
             update_option('rolino_sms_api_key', sanitize_text_field($_POST['sms_api_key'] ?? ''));
             update_option('rolino_sms_sender', sanitize_text_field($_POST['sms_sender'] ?? ''));
             
@@ -359,6 +361,19 @@ class Rolino_Admin_Menu {
                         } else {
                             $sanitized_settings[$key] = sanitize_text_field($value);
                         }
+                    }
+                    
+                    // Handle checkbox values properly
+                    if (isset($gateway_settings['enabled'])) {
+                        $sanitized_settings['enabled'] = 1;
+                    } else {
+                        $sanitized_settings['enabled'] = 0;
+                    }
+                    
+                    if (isset($gateway_settings['test_mode'])) {
+                        $sanitized_settings['test_mode'] = 1;
+                    } else {
+                        $sanitized_settings['test_mode'] = 0;
                     }
                     
                     update_option("rolino_gateway_{$gateway_id}_settings", $sanitized_settings);
